@@ -59,7 +59,7 @@
 
 #define U16(a, b, c, d) (0b ## a ## b ## c ## d)
 
-uint16_t type_masks[]={
+static uint16_t type_masks[]={
 	U16(1111, 1111, 1111, 1111),
 	U16(1111, 1111, 0000, 0000),
 	U16(1111, 1111, 1000, 1000),
@@ -88,7 +88,7 @@ uint16_t type_masks[]={
 //
 // Also, we mostly use alphabetical order. We make an exception for
 // ld/ldd and st/std opcodes due to their complexity.
-char op_names[]=
+static char op_names[]=
 	OP_RD_D4_R4 "adc"
 	OP_RD_D4_R4 "add"
 	OP_K6_R2    "adiw"
@@ -206,7 +206,7 @@ char op_names[]=
 	OP_ANY // Sort of null terminator.
 ;
 
-uint16_t op_bits[]={
+static uint16_t op_bits[]={
 	U16(0001, 1100, 0000, 0000), // adc
 	U16(0000, 1100, 0000, 0000), // add
 	U16(1001, 0110, 0000, 0000), // adiw
@@ -336,21 +336,21 @@ uint16_t op_bits[]={
 #define ARG_MXP 8
 #define ARG_YPQ 9
 
-char buffer[64];
-char* buf;
+static char buffer[64];
+static char* buf;
 
-void reset(){
+static void reset(){
 	for(int i=0; i<64; i++){
 		buffer[i]=0;
 	}
 	buf=buffer;
 }
 
-void append(char c){
+static void append(char c){
 	*buf++=c;
 }
 
-void append_decnum(uint16_t num){
+static void append_decnum(uint16_t num){
 	char digs[6]={};
 	uint8_t i=0;
 	while(num){
@@ -365,7 +365,7 @@ void append_decnum(uint16_t num){
 	}
 }
 
-void append_hexnibble(uint8_t num){
+static void append_hexnibble(uint8_t num){
 	num&=0xfu;
 	if(num<10){
 		append('0'+num);
@@ -375,7 +375,7 @@ void append_hexnibble(uint8_t num){
 	}
 }
 
-void decode(uint16_t op, uint16_t next){
+static void decode(uint16_t op, uint16_t next){
 	reset();
 	char* ptr=op_names;
 	for(uint8_t i=0; ; i++){
