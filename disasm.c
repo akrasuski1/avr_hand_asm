@@ -57,9 +57,6 @@
 #define OP_K22_CHR 'Q'
 #define OP_ANY_CHR 'R'
 
-#define FURTHER_INPUT_STR "W"
-#define FURTHER_INPUT_CHR 'W'
-
 #define U16(a, b, c, d) (0b ## a ## b ## c ## d)
 
 uint16_t type_masks[]={
@@ -137,8 +134,8 @@ char op_names[]=
 	OP_CONST    "eicall"
 	OP_CONST    "eijmp"
 	OP_CONST    "elpm"
-	OP_R5       "elpm" FURTHER_INPUT_STR ", Z"
-	OP_R5       "elpm" FURTHER_INPUT_STR ", Z+"
+	OP_R5       "elpm"
+	OP_R5       "elpm"
 	OP_RD_D4_R4 "eor"
 	OP_D3_R3    "fmul"
 	OP_D3_R3    "fmuls"
@@ -154,8 +151,8 @@ char op_names[]=
 	OP_K8_R4    "ldi"
 	OP_R5_K16   "lds"
 	OP_CONST    "lpm"
-	OP_R5       "lpm" FURTHER_INPUT_STR ", Z"
-	OP_R5       "lpm" FURTHER_INPUT_STR ", Z+"
+	OP_R5       "lpm"
+	OP_R5       "lpm"
 	OP_R5       "lsr"
 	OP_RD_D4_R4 "mov"
 	OP_D4_R4    "movw"
@@ -326,22 +323,7 @@ uint16_t op_bits[]={
 	U16(0000, 0000, 0000, 0000), // [reserved]
 };
 
-uint16_t masked_int(uint16_t val, uint16_t mask){
-	uint16_t res=0;
-	uint8_t resi=0;
-	for(uint8_t i=0; i<16; i++){
-		if(mask & ( ((uint8_t)1u)<<i ) ){
-			if(val & ( ((uint8_t)1u)<<i ) ){
-				res |= ((uint16_t)1u)<<resi;
-			}
-			resi++;
-		}
-	}
-	return res;
-}
-
-#define IS_METADATA(c) ((c)>='A' && (c)<='W')
-#define IS_OPDATA(c) ((c)>='A' && (c)<=OP_ANY_CHR)
+#define IS_METADATA(c) ((c)>='A' && (c)<=OP_ANY_CHR)
 
 char buffer[64];
 char* buf;
@@ -425,7 +407,7 @@ void decode(uint16_t op, uint16_t next){
 	reset();
 	char* ptr=op_names;
 	for(uint8_t i=0; ; i++){
-		while( !IS_OPDATA(*ptr) ){
+		while( !IS_METADATA(*ptr) ){
 			ptr++;
 		}
 		uint8_t op_type=ptr[0]-'A';
@@ -436,12 +418,19 @@ void decode(uint16_t op, uint16_t next){
 				append(*ptr);
 				ptr++;
 			}
+			uint8_t dreg=(op>>4)&0x1f;
+			uint8_t st=!!(op&0x0200u);
+			uint8_t b=op&7;
+			uint8_t reg=(op&0xf)|((op&0x200)>>5);
+			/*uint8_t arguments[16];
+			uint8_t j=16;
+			while(j--){
+				arguments[j]=0;
+			}*/
 			switch(op_type+'A'){
 				case OP_R5_Y_P_CHR:
 				{
-					uint8_t r=masked_int(op, U16(0000, 0001, 1111, 0000));
 					char xyz=(op>>2u)&3u;
-					uint8_t st=!!(op&0x0200u);
 					uint8_t p=(op&3u);
 
 					if(xyz==1u || p==3u || (p==0u && xyz!=3u)){
@@ -461,39 +450,26 @@ void decode(uint16_t op, uint16_t next){
 						// ld rD, N+ | 1 0
 						// ld rD, -N | 2 0
 						// ld rD, X  | 0 0
-						if(st){ // st
-							switch(p){
-								case 1:
-									append(xyz);
-									append('+');
-									break;
-								case 2:
-									append('-');
-								case 0: // fallthrough
-									append(xyz);
-									break;
+						for(uint8_t j=0; ; j++){
+							if(st^j){ // st
+								switch(p){
+									case 1:
+										append(xyz);
+										append('+');
+										break;
+									default:
+										append('-');
+									case 0: // fallthrough
+										append(xyz);
+										break;
+								}
 							}
-						}
-						else{
-							append_reg(r);
-						}
-						append(',');
-						append(' ');
-						if(st){ // st
-							append_reg(r);
-						}
-						else{
-							switch(p){
-								case 1:
-									append(xyz);
-									append('+');
-									break;
-								case 2:
-									append('-');
-								case 0: // fallthrough
-									append(xyz);
-									break;
+							else{
+								append_reg(dreg);
 							}
+							if(j==1u){ break; }
+							append(',');
+							append(' ');
 						}
 
 					}
@@ -502,7 +478,7 @@ void decode(uint16_t op, uint16_t next){
 				{
 					append(' ');
 					append('.');
-					int16_t k=masked_int(op, U16(0000, 1111, 1111, 1111));
+					int16_t k=op&0xfff;
 					if(k&0x800){
 						append('-');
 						k=0x1000-k;
@@ -514,101 +490,91 @@ void decode(uint16_t op, uint16_t next){
 				} break;
 				case OP_Q_R5_CHR:
 				{
-					uint8_t q=masked_int(op, U16(0010, 1100, 0000, 0111));
-					uint8_t r=masked_int(op, U16(0000, 0001, 1111, 0000));
+					uint8_t q=(op&7)|((op&0x0c00u)>>7)|((op&0x2000u)>>8);
 					char yz='Z'-((op>>3)&1);
-					uint8_t st=!!(op&0x0200u);
 
 					if(q){
 						append('d');
 					}
 					append(' ');
-					if(st){ // st
-						append(yz);
-						if(q){
-							append('+');
-							append_decnum(q);
+					for(uint8_t j=0; ; j++){
+						if(st^j){ // st
+							append(yz);
+							if(q){
+								append('+');
+								append_decnum(q);
+							}
 						}
-					}
-					else{ // ld
-						append_reg(r);
-					}
-					append(',');
-					append(' ');
-					if(st){ // st
-						append_reg(r);
-					}
-					else{ // ld
-						append(yz);
-						if(q){
-							append('+');
-							append_decnum(q);
+						else{ // ld
+							append_reg(dreg);
 						}
+						if(j==1u){ break; }
+						append(',');
+						append(' ');
 					}
 				} break;
 				case OP_RD_D4_R4_CHR:
 				{
-					uint8_t r=masked_int(op, U16(0000, 0010, 0000, 1111));
-					uint8_t d=masked_int(op, U16(0000, 0001, 1111, 0000));
 					append(' ');
-					append_regspace(d);
-					append_reg(r);
+					append_regspace(dreg);
+					append_reg(reg);
 				} break;
 				case OP_D3_R3_CHR:
 				{
-					uint8_t r=masked_int(op, U16(0000, 0000, 0000, 0111));
-					uint8_t d=masked_int(op, U16(0000, 0000, 0111, 0000));
 					append(' ');
-					append_regspace(d+16);
-					append_reg(r+16);
+					append_regspace((dreg&7)+16);
+					append_reg((reg&7)+16);
 				} break;
 				case OP_D4_R4_CHR:
 				{
-					uint8_t r=masked_int(op, U16(0000, 0000, 0000, 1111));
-					uint8_t d=masked_int(op, U16(0000, 0000, 1111, 0000));
+					reg&=0xf;
+					dreg&=0xf;
 					append(' ');
 					if(op&0x0100u){ // movw
-						append_regspace(d*2);
-						append_reg(r*2);
+						append_regspace(dreg*2);
+						append_reg(reg*2);
 					}
 					else{ // muls
-						append_regspace(d+16);
-						append_reg(r+16);
+						append_regspace(dreg+16);
+						append_reg(reg+16);
 					}
 				} break;
 				case OP_K6_R2_CHR:
 				{
-					uint8_t d=masked_int(op, U16(0000, 0000, 0011, 0000));
-					uint8_t k=masked_int(op, U16(0000, 0000, 1100, 1111));
+					uint8_t k=(op&0xf)|((op>>2)&0x30);
 					append(' ');
-					append_regspace(d*2+24);
+					append_regspace((dreg&3)*2+24);
 					append_hexbyte(k);
 				} break;
 				case OP_K8_R4_CHR:
 				{
-					uint8_t d=masked_int(op, U16(0000, 0000, 1111, 0000));
-					uint8_t k=masked_int(op, U16(0000, 1111, 0000, 1111));
+					uint8_t k=(op&0xf)|((op>>4)&0xf0);
 					append(' ');
-					append_regspace(d+16);
+					append_regspace((dreg&0xf)+16);
 					append_hexbyte(k);
 				} break;
 				case OP_R5_CHR:
 				{
-					uint8_t d=masked_int(op, U16(0000, 0001, 1111, 0000));
 					append(' ');
-					append_reg(d);
+					append_reg(dreg);
+					if((op&0xfe0cu)==0x9004){ // lpm/elpm Z(+)
+						append(',');
+						append(' ');
+						append('Z');
+						if(op&1){
+							append('+');
+						}
+					}
 				} break;
 				case OP_R5_B_CHR:
 				{
-					uint8_t d=masked_int(op, U16(0000, 0001, 1111, 0000));
-					uint8_t b=masked_int(op, U16(0000, 0000, 0000, 0111));
 					append(' ');
-					append_regspace(d);
+					append_regspace(dreg);
 					append_decnum(b);
 				} break;
 				case OP_K7_CHR:
 				{
-					uint8_t k=masked_int(op, U16(0000, 0011, 1111, 1000));
+					uint8_t k=(op>>3)&0x7f;
 					append(' ');
 					append('.');
 					if(k&64){
@@ -622,7 +588,7 @@ void decode(uint16_t op, uint16_t next){
 				} break;
 				case OP_K4_CHR:
 				{
-					uint8_t k=masked_int(op, U16(0000, 0000, 1111, 0000));
+					uint8_t k=(op>>4)&0xf;
 					append(' ');
 					append_decnum(k);
 				} break;
@@ -632,7 +598,7 @@ void decode(uint16_t op, uint16_t next){
 				} break;
 				case OP_K22_CHR:
 				{
-					uint32_t k=masked_int(op, U16(0000, 0001, 1111, 0001));
+					uint32_t k=(op&1)|((op>>3)&0x3e);
 					k<<=16;
 					k|=next;
 					append(' ');
@@ -640,23 +606,21 @@ void decode(uint16_t op, uint16_t next){
 				} break;
 				case OP_R5_K16_CHR:
 				{
-					uint32_t d=masked_int(op, U16(0000, 0001, 1111, 0000));
 					append(' ');
 					if(op&0x0200){
 						append_hex16(next);
 						append(',');
 						append(' ');
-						append_reg(d);
+						append_reg(dreg);
 					}
 					else{
-						append_regspace(d);
+						append_regspace(dreg);
 						append_hex16(next);
 					}
 				} break;
 				case OP_IO_B_CHR:
 				{
-					uint8_t a=masked_int(op, U16(0000, 0000, 1111, 1000));
-					uint8_t b=masked_int(op, U16(0000, 0000, 0000, 0111));
+					uint8_t a=(op>>3)&0x1f;
 					append(' ');
 					append_hexbyte(a);
 					append(',');
@@ -665,31 +629,23 @@ void decode(uint16_t op, uint16_t next){
 				} break;
 				case OP_IO_R5_CHR:
 				{
-					uint8_t a=masked_int(op, U16(0000, 0110, 0000, 1111));
-					uint8_t d=masked_int(op, U16(0000, 0001, 1111, 0000));
+					uint8_t a=(op&0xf)|((op>>5)&0x30);
 					append(' ');
 					if(op&0x0800){ // out
 						append_hexbyte(a);
 						append(',');
 						append(' ');
-						append_reg(d);
+						append_reg(dreg);
 					}
 					else{ // in
-						append_regspace(d);
+						append_regspace(dreg);
 						append_hexbyte(a);
 					}
 				} break;
 				default:
 				{
-					printf("Ehh...\n");
+					//printf("Ehh...\n");
 				} break;
-			}
-			if(*ptr==FURTHER_INPUT_CHR){
-				ptr++;
-				do {
-					append(*ptr);
-					ptr++;
-				} while( !IS_METADATA(*ptr));
 			}
 			return;
 		}
