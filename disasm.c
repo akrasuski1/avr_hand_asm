@@ -325,6 +325,17 @@ uint16_t op_bits[]={
 
 #define IS_METADATA(c) ((c)>='A' && (c)<=OP_ANY_CHR)
 
+#define ARG_EOF 0
+#define ARG_REG 1
+#define ARG_HEXBYTE 2
+#define ARG_HEXWORD 3
+#define ARG_HEX3B 4
+#define ARG_DECBYTE 5
+#define ARG_OFFSET 6
+#define ARG_RESERVED 7
+#define ARG_MXP 8
+#define ARG_YPQ 9
+
 char buffer[64];
 char* buf;
 
@@ -418,15 +429,15 @@ void decode(uint16_t op, uint16_t next){
 				append(*ptr);
 				ptr++;
 			}
+			uint8_t arguments[16];
+			uint8_t j=16;
+			while(j--){
+				arguments[j]=ARG_EOF;
+			}
 			uint8_t dreg=(op>>4)&0x1f;
 			uint8_t st=!!(op&0x0200u);
 			uint8_t b=op&7;
 			uint8_t reg=(op&0xf)|((op&0x200)>>5);
-			/*uint8_t arguments[16];
-			uint8_t j=16;
-			while(j--){
-				arguments[j]=0;
-			}*/
 			switch(op_type+'A'){
 				case OP_R5_Y_P_CHR:
 				{
@@ -434,14 +445,9 @@ void decode(uint16_t op, uint16_t next){
 					uint8_t p=(op&3u);
 
 					if(xyz==1u || p==3u || (p==0u && xyz!=3u)){
-						reset();
-						for(const char* c="[reserved]"; *c; c++){
-							*buf++=*c;
-						}
+						arguments[0]=ARG_RESERVED;
 					}
 					else{
-						append(' ');
-						xyz=('X'+3)-xyz-!xyz;
 						// Possible formats:
 						//             p st
 						// st N+, rD | 1 1
@@ -450,204 +456,259 @@ void decode(uint16_t op, uint16_t next){
 						// ld rD, N+ | 1 0
 						// ld rD, -N | 2 0
 						// ld rD, X  | 0 0
-						for(uint8_t j=0; ; j++){
+						uint8_t k=0;
+						for(uint8_t j=0; j<2 ; j++){
 							if(st^j){ // st
-								switch(p){
-									case 1:
-										append(xyz);
-										append('+');
-										break;
-									default:
-										append('-');
-									case 0: // fallthrough
-										append(xyz);
-										break;
-								}
+								arguments[k++]=ARG_MXP;
+								arguments[k++]=p;
+								arguments[k++]=xyz;
 							}
 							else{
-								append_reg(dreg);
+								arguments[k++]=ARG_REG;
+								arguments[k++]=dreg;
 							}
-							if(j==1u){ break; }
-							append(',');
-							append(' ');
 						}
-
+						// TODO: maybe no for?
 					}
 				} break;
 				case OP_K12_CHR:
 				{
-					append(' ');
-					append('.');
 					int16_t k=op&0xfff;
-					if(k&0x800){
-						append('-');
-						k=0x1000-k;
-					}
-					else{
-						append('+');
-					}
-					append_decnum(k*2);
+					arguments[0]=ARG_OFFSET;
+					arguments[1]=12;
+					arguments[2]=k>>8;
+					arguments[3]=k;
 				} break;
 				case OP_Q_R5_CHR:
 				{
 					uint8_t q=(op&7)|((op&0x0c00u)>>7)|((op&0x2000u)>>8);
-					char yz='Z'-((op>>3)&1);
+					char yz=((op>>3)&1);
 
 					if(q){
 						append('d');
 					}
-					append(' ');
-					for(uint8_t j=0; ; j++){
+					uint8_t k=0;
+					for(uint8_t j=0; j<2; j++){
 						if(st^j){ // st
-							append(yz);
-							if(q){
-								append('+');
-								append_decnum(q);
-							}
+							arguments[k++]=ARG_YPQ;
+							arguments[k++]=yz;
+							arguments[k++]=q;
 						}
 						else{ // ld
-							append_reg(dreg);
+							arguments[k++]=ARG_REG;
+							arguments[k++]=dreg;
 						}
-						if(j==1u){ break; }
-						append(',');
-						append(' ');
+						// TODO: maybe no for?
 					}
 				} break;
 				case OP_RD_D4_R4_CHR:
 				{
-					append(' ');
-					append_regspace(dreg);
-					append_reg(reg);
+					arguments[0]=ARG_REG;
+					arguments[1]=dreg;
+					arguments[2]=ARG_REG;
+					arguments[3]=reg;
 				} break;
 				case OP_D3_R3_CHR:
 				{
-					append(' ');
-					append_regspace((dreg&7)+16);
-					append_reg((reg&7)+16);
+					arguments[0]=ARG_REG;
+					arguments[1]=(dreg&7)+16;
+					arguments[2]=ARG_REG;
+					arguments[3]=(reg&7)+16;
 				} break;
 				case OP_D4_R4_CHR:
 				{
+					arguments[0]=ARG_REG;
+					arguments[2]=ARG_REG;
 					reg&=0xf;
 					dreg&=0xf;
-					append(' ');
 					if(op&0x0100u){ // movw
-						append_regspace(dreg*2);
-						append_reg(reg*2);
+						arguments[1]=dreg*2;
+						arguments[3]=reg*2;
 					}
 					else{ // muls
-						append_regspace(dreg+16);
-						append_reg(reg+16);
+						arguments[1]=dreg+16;
+						arguments[3]=reg+16;
 					}
 				} break;
 				case OP_K6_R2_CHR:
 				{
-					uint8_t k=(op&0xf)|((op>>2)&0x30);
-					append(' ');
-					append_regspace((dreg&3)*2+24);
-					append_hexbyte(k);
+					arguments[0]=ARG_REG;
+					arguments[1]=(dreg&3)*2+24;
+					arguments[2]=ARG_HEXBYTE;
+					arguments[3]=(op&0xf)|((op>>2)&0x30);
 				} break;
 				case OP_K8_R4_CHR:
 				{
-					uint8_t k=(op&0xf)|((op>>4)&0xf0);
-					append(' ');
-					append_regspace((dreg&0xf)+16);
-					append_hexbyte(k);
+					arguments[0]=ARG_REG;
+					arguments[1]=(dreg&0xf)+16;
+					arguments[2]=ARG_HEXBYTE;
+					arguments[3]=(op&0xf)|((op>>4)&0xf0);
 				} break;
 				case OP_R5_CHR:
 				{
-					append(' ');
-					append_reg(dreg);
+					arguments[0]=ARG_REG;
+					arguments[1]=dreg;
 					if((op&0xfe0cu)==0x9004){ // lpm/elpm Z(+)
-						append(',');
-						append(' ');
-						append('Z');
-						if(op&1){
-							append('+');
-						}
+						arguments[2]=ARG_MXP;
+						arguments[3]=op&1;
+						arguments[4]=0;
 					}
 				} break;
 				case OP_R5_B_CHR:
 				{
-					append(' ');
-					append_regspace(dreg);
-					append_decnum(b);
+					arguments[0]=ARG_REG;
+					arguments[1]=dreg;
+					arguments[2]=ARG_DECBYTE;
+					arguments[3]=b;
 				} break;
 				case OP_K7_CHR:
 				{
-					uint8_t k=(op>>3)&0x7f;
-					append(' ');
-					append('.');
-					if(k&64){
-						append('-');
-						k=128-k;
-					}
-					else{
-						append('+');
-					}
-					append_decnum(k*2);
+					arguments[0]=ARG_OFFSET;
+					arguments[1]=7;
+					arguments[2]=0;
+					arguments[3]=(op>>3)&0x7f;
 				} break;
 				case OP_K4_CHR:
 				{
-					uint8_t k=(op>>4)&0xf;
-					append(' ');
-					append_decnum(k);
-				} break;
-				case OP_CONST_CHR:
-				case OP_ANY_CHR:
-				{
+					arguments[0]=ARG_DECBYTE;
+					arguments[1]=(op>>4)&0xf;
 				} break;
 				case OP_K22_CHR:
 				{
-					uint32_t k=(op&1)|((op>>3)&0x3e);
-					k<<=16;
-					k|=next;
-					append(' ');
-					append_hex32(k*2);
+					arguments[0]=ARG_HEX3B;
+					arguments[1]=(op&1)|((op>>3)&0x3e);
 				} break;
 				case OP_R5_K16_CHR:
 				{
-					append(' ');
-					if(op&0x0200){
-						append_hex16(next);
-						append(',');
-						append(' ');
-						append_reg(dreg);
+					if(op&0x0200){ // sts
+						arguments[0]=ARG_HEXWORD;
+						arguments[1]=next>>8;
+						arguments[2]=next;
+						arguments[3]=ARG_REG;
+						arguments[4]=dreg;
 					}
-					else{
-						append_regspace(dreg);
-						append_hex16(next);
+					else{ // lds
+						arguments[0]=ARG_REG;
+						arguments[1]=dreg;
+						arguments[2]=ARG_HEXWORD;
+						arguments[3]=next>>8;
+						arguments[4]=next;
 					}
 				} break;
 				case OP_IO_B_CHR:
 				{
-					uint8_t a=(op>>3)&0x1f;
-					append(' ');
-					append_hexbyte(a);
-					append(',');
-					append(' ');
-					append_decnum(b);
+					arguments[0]=ARG_HEXBYTE;
+					arguments[1]=(op>>3)&0x1f;
+					arguments[2]=ARG_DECBYTE;
+					arguments[3]=b;
 				} break;
 				case OP_IO_R5_CHR:
 				{
 					uint8_t a=(op&0xf)|((op>>5)&0x30);
-					append(' ');
 					if(op&0x0800){ // out
-						append_hexbyte(a);
-						append(',');
-						append(' ');
-						append_reg(dreg);
+						arguments[0]=ARG_HEXBYTE;
+						arguments[1]=a;
+						arguments[2]=ARG_REG;
+						arguments[3]=dreg;
 					}
 					else{ // in
-						append_regspace(dreg);
-						append_hexbyte(a);
+						arguments[0]=ARG_REG;
+						arguments[1]=dreg;
+						arguments[2]=ARG_HEXBYTE;
+						arguments[3]=a;
 					}
 				} break;
+				case OP_CONST_CHR:
+				case OP_ANY_CHR:
 				default:
 				{
-					//printf("Ehh...\n");
 				} break;
 			}
-			return;
+			j=0;
+			while(1){
+				uint8_t byte=arguments[j++];
+				if(byte==0){ return; }
+				if(j!=1u){
+					append(',');
+				}
+				append(' ');
+				switch(byte){
+					case ARG_REG:
+					{
+						append('r');
+						append_decnum(arguments[j++]);
+					} break;
+					case ARG_HEXBYTE:
+					{
+						append_hexbyte(arguments[j++]);
+					} break;
+					case ARG_HEXWORD:
+					{
+						uint16_t word=arguments[j++];
+						word=(word<<8)|arguments[j++];
+						append_hex16(word);
+					} break;
+					case ARG_HEX3B:
+					{
+						uint32_t n=arguments[j++];
+						n=(n<<16)|next;
+						append_hex32(n*2);
+					} break;
+					case ARG_DECBYTE:
+					{
+						append_decnum(arguments[j++]);
+					} break;
+					case ARG_OFFSET:
+					{
+						append('.');
+						uint16_t bits=arguments[j++];
+						uint16_t k=arguments[j++];
+						k=(k<<8)|arguments[j++];
+						if(k&(1u<<(bits-1))){
+							append('-');
+							k=(1u<<bits)-k;
+						}
+						else{
+							append('+');
+						}
+						append_decnum(k*2);
+					} break;
+					case ARG_RESERVED:
+					{
+						reset();
+						for(const char* c="[reserved]"; *c; c++){
+							*buf++=*c;
+						}
+					} break;
+					case ARG_MXP:
+					{
+						uint8_t p=arguments[j++];
+						uint8_t xyz=arguments[j++];
+						xyz=('X'+3)-xyz-!xyz;
+						switch(p){
+							case 1:
+								append(xyz);
+								append('+');
+								break;
+							default:
+								append('-');
+							case 0: // fallthrough
+								append(xyz);
+								break;
+						}
+					} break;
+					case ARG_YPQ:
+					{
+						uint8_t yz='Z'-arguments[j++];
+						uint8_t q=arguments[j++];
+						append(yz);
+						if(q){
+							append('+');
+							append_decnum(q);
+						}
+					} break;
+				}
+			}
 		}
 	}
 }
