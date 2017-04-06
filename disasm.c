@@ -344,10 +344,10 @@ static char buffer[64];
 static char* buf;
 
 static void reset(){
-	for(int i=0; i<64; i++){
-		buffer[i]=0;
+	buf=buffer+sizeof(buffer);
+	while(buf != buffer){
+		*--buf=0;
 	}
-	buf=buffer;
 }
 
 static void append(char c){
@@ -413,8 +413,8 @@ static void decode(uint16_t op){
 			uint8_t dreg=(op>>4)&0x1f;
 			uint8_t reg=(op&0xf)|((op&0x200)>>5);
 
-			switch(op_type+'A'){
-				case OP_R5_Y_P_CHR:
+			switch(op_type){
+				case OP_R5_Y_P_CHR-'A':
 				{
 					uint8_t xyz=(op>>2u)&3u;
 					uint8_t p=(op&3u);
@@ -445,7 +445,24 @@ static void decode(uint16_t op){
 						}
 					}
 				} break;
-				case OP_K12_CHR:
+				case OP_R5_K16_CHR-'A':
+				{
+					if(op&0x0200){ // sts
+						*args++=ARG_HEXWORD;
+						*args++=next>>8;
+						*args++=next;
+						*args++=ARG_REG;
+						*args++=dreg;
+					}
+					else{ // lds
+						*args++=ARG_REG;
+						*args++=dreg;
+						*args++=ARG_HEXWORD;
+						*args++=next>>8;
+						*args++=next;
+					}
+				} break;
+				case OP_K12_CHR-'A':
 				{
 					uint16_t k=op&0xfff;
 					*args++=ARG_OFFSET;
@@ -453,7 +470,7 @@ static void decode(uint16_t op){
 					*args++=k>>8;
 					*args++=k;
 				} break;
-				case OP_Q_R5_CHR:
+				case OP_Q_R5_CHR-'A':
 				{
 					uint8_t q=(op&7)|((op&0x0c00u)>>7)|((op&0x2000u)>>8);
 					char yz=((op>>3)&1);
@@ -476,9 +493,9 @@ static void decode(uint16_t op){
 						*args++=q;
 					}
 				} break;
-				case OP_RD_D4_R4_CHR:
-				case OP_D3_R3_CHR:
-				case OP_D4_R4_CHR:
+				case OP_RD_D4_R4_CHR-'A':
+				case OP_D3_R3_CHR-'A':
+				case OP_D4_R4_CHR-'A':
 				{
 					if(op_type+'A'==OP_D3_R3_CHR){
 						dreg=(dreg&7)+16;
@@ -499,21 +516,21 @@ static void decode(uint16_t op){
 					*args++=ARG_REG;
 					*args++=reg;
 				} break;
-				case OP_K6_R2_CHR:
+				case OP_K6_R2_CHR-'A':
 				{
 					*args++=ARG_REG;
 					*args++=(dreg&3)*2+24;
 					*args++=ARG_HEXBYTE;
 					*args++=(op&0xf)|((op>>2)&0x30);
 				} break;
-				case OP_K8_R4_CHR:
+				case OP_K8_R4_CHR-'A':
 				{
 					*args++=ARG_REG;
 					*args++=(dreg&0xf)+16;
 					*args++=ARG_HEXBYTE;
 					*args++=(op&0xf)|((op>>4)&0xf0);
 				} break;
-				case OP_R5_CHR:
+				case OP_R5_CHR-'A':
 				{
 					*args++=ARG_REG;
 					*args++=dreg;
@@ -523,55 +540,38 @@ static void decode(uint16_t op){
 						*args++=0;
 					}
 				} break;
-				case OP_R5_B_CHR:
+				case OP_R5_B_CHR-'A':
 				{
 					*args++=ARG_REG;
 					*args++=dreg;
 					*args++=ARG_DECBYTE;
 					*args++=op&7;
 				} break;
-				case OP_K7_CHR:
+				case OP_K7_CHR-'A':
 				{
 					*args++=ARG_OFFSET;
 					*args++=7;
 					*args++=0;
 					*args++=(op>>3)&0x7f;
 				} break;
-				case OP_K4_CHR:
+				case OP_K4_CHR-'A':
 				{
 					*args++=ARG_DECBYTE;
 					*args++=(op>>4)&0xf;
 				} break;
-				case OP_K22_CHR:
+				case OP_K22_CHR-'A':
 				{
 					*args++=ARG_HEX3B;
 					*args++=(op&1)|((op>>3)&0x3e);
 				} break;
-				case OP_R5_K16_CHR:
-				{
-					if(op&0x0200){ // sts
-						*args++=ARG_HEXWORD;
-						*args++=next>>8;
-						*args++=next;
-						*args++=ARG_REG;
-						*args++=dreg;
-					}
-					else{ // lds
-						*args++=ARG_REG;
-						*args++=dreg;
-						*args++=ARG_HEXWORD;
-						*args++=next>>8;
-						*args++=next;
-					}
-				} break;
-				case OP_IO_B_CHR:
+				case OP_IO_B_CHR-'A':
 				{
 					*args++=ARG_HEXBYTE;
 					*args++=(op>>3)&0x1f;
 					*args++=ARG_DECBYTE;
 					*args++=op&7;
 				} break;
-				case OP_IO_R5_CHR:
+				case OP_IO_R5_CHR-'A':
 				{
 					uint8_t a=(op&0xf)|((op>>5)&0x30);
 					if(op&0x0800){ // out
@@ -587,8 +587,8 @@ static void decode(uint16_t op){
 						*args++=a;
 					}
 				} break;
-				case OP_CONST_CHR:
-				case OP_ANY_CHR:
+				case OP_CONST_CHR-'A':
+				case OP_ANY_CHR-'A':
 				{
 					*args++=ARG_EOF;
 				} break;
