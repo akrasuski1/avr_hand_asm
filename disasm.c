@@ -414,14 +414,17 @@ static void append_arguments(){
 			} break;
 			case ARG_HEX3B:
 			{
-				uint32_t val=*args++;
-				val=(val<<16) | next;
+				static uint8_t bytes[3];
+				bytes[0]=((*args++)<<1)|(next>>15);
+				bytes[1]=(next&0x07f80u)>>7;
+				bytes[2]=(next&0x7f)<<1;
 				append('0');
-				if(val){
+				if(bytes[0] || bytes[1] || bytes[2]){
 					append('x');
 					uint8_t any=0;
-					for(uint8_t nib=27u; nib!=0xfbu; nib-=4u){
-						uint8_t x=val>>nib;
+					for(uint8_t nib=0; nib<6; nib++){
+						uint8_t x=bytes[nib/2];
+						if((nib&1) == 0){ x>>=4; }
 						any|=x;
 						if(any){
 							append_hexnibble(x);
