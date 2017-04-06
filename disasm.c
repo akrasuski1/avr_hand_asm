@@ -5,58 +5,61 @@
 	#include <stdint.h>
 #endif
 
-#define OP_CONST "A"
+#define OP_CONST "\x00"
 // xxxx xxxx xxxx xxxx <>
-#define OP_D4_R4 "B"
+#define OP_D4_R4 "\x01"
 // xxxx xxxx dddd rrrr <dr>
-#define OP_D3_R3 "C"
+#define OP_D3_R3 "\x02"
 // xxxx xxxx xddd xrrr <dr>
-#define OP_RD_D4_R4 "D"
+#define OP_RD_D4_R4 "\x03"
 // xxxx xxrd dddd rrrr <dr>
-#define OP_K8_R4 "E"
+#define OP_K8_R4 "\x04"
 // xxxx kkkk rrrr kkkk <kr>
-#define OP_R5 "F"
+#define OP_R5 "\x05"
 // xxxx xxxr rrrr xxxx <r>
-#define OP_Q_R5 "G"
+#define OP_Q_R5 "\x06"
 // xxqx qqxr rrrr yqqq <qr>
-#define OP_K6_R2 "H"
+#define OP_K6_R2 "\x07"
 // xxxx xxxx kkrr kkkk <kr>
-#define OP_IO_B "I"
+#define OP_IO_B "\x08"
 // xxxx xxxx aaaa abbb <ab>
-#define OP_IO_R5 "J"
+#define OP_IO_R5 "\x09"
 // xxxx xaar rrrr aaaa <ar>
-#define OP_K12 "K"
+#define OP_K12 "\x0a"
 // xxxx kkkk kkkk kkkk <k>
-#define OP_R5_B "L"
+#define OP_R5_B "\x0b"
 // xxxx xxxr rrrr xbbb <rb>
-#define OP_K7 "M"
+#define OP_K7 "\x0c"
 // xxxx xxkk kkkk kxxx <k>
-#define OP_R5_K16 "N"
+#define OP_R5_K16 "\x0d"
 // xxxx xxxr rrrr xxxx [k16] <r>
-#define OP_R5_Y_P "O"
+#define OP_R5_Y_P "\x0e"
 // xxxx xxxr rrrr yypp <rp>
-#define OP_K4 "P"
+#define OP_K4 "\x0f"
 // xxxx xxxx kkkk xxxx <k>
-#define OP_K22 "Q"
+#define OP_K22 "\x10"
 // xxxx xxxk kkkk xxxk [k16] <k>
 
-#define OP_CONST_CHR 'A'
-#define OP_D4_R4_CHR 'B'
-#define OP_D3_R3_CHR 'C'
-#define OP_RD_D4_R4_CHR 'D'
-#define OP_K8_R4_CHR 'E'
-#define OP_R5_CHR 'F'
-#define OP_Q_R5_CHR 'G'
-#define OP_K6_R2_CHR 'H'
-#define OP_IO_B_CHR 'I'
-#define OP_IO_R5_CHR 'J'
-#define OP_K12_CHR 'K'
-#define OP_R5_B_CHR 'L'
-#define OP_K7_CHR 'M'
-#define OP_R5_K16_CHR 'N'
-#define OP_R5_Y_P_CHR 'O'
-#define OP_K4_CHR 'P'
-#define OP_K22_CHR 'Q'
+#define OP_CONST_CHR 0
+#define OP_D4_R4_CHR 1
+#define OP_D3_R3_CHR 2
+#define OP_RD_D4_R4_CHR 3
+#define OP_K8_R4_CHR 4
+#define OP_R5_CHR 5
+#define OP_Q_R5_CHR 6
+#define OP_K6_R2_CHR 7
+#define OP_IO_B_CHR 8
+#define OP_IO_R5_CHR 9
+#define OP_K12_CHR 10
+#define OP_R5_B_CHR 11
+#define OP_K7_CHR 12
+#define OP_R5_K16_CHR 13
+#define OP_R5_Y_P_CHR 14
+#define OP_K4_CHR 15
+#define OP_K22_CHR 16
+
+#define OP_FIRST OP_CONST_CHR
+#define OP_LAST OP_K22_CHR
 
 #define U16(a, b, c, d) (0b ## a ## b ## c ## d)
 
@@ -88,7 +91,13 @@ static uint16_t type_masks[]={
 //
 // Also, we mostly use alphabetical order. We make an exception for
 // ld/ldd and st/std opcodes due to their complexity.
-static char op_names[]=
+#define OP_NAMES_NUM 111
+
+#define SHORT_SPACE_Z_COMMA_STR "{" // Chosen because it's just after 'z'
+#define SHORT_SPACE_Z_COMMA_CHR '{' 
+#define SHORT_SPACE_Z_PLUS_STR  "|" // Chosen because it's just after 'z'
+#define SHORT_SPACE_Z_PLUS_CHR  '|' 
+static uint8_t op_names[]=
 	OP_RD_D4_R4 "adc"
 	OP_RD_D4_R4 "add"
 	OP_K6_R2    "adiw"
@@ -145,9 +154,9 @@ static char op_names[]=
 	OP_IO_R5    "in"
 	OP_R5       "inc"
 	OP_K22      "jmp"
-	OP_R5       "lac Z,"
-	OP_R5       "las Z,"
-	OP_R5       "lat Z,"
+	OP_R5       "lac" SHORT_SPACE_Z_COMMA_STR
+	OP_R5       "las" SHORT_SPACE_Z_COMMA_STR
+	OP_R5       "lat" SHORT_SPACE_Z_COMMA_STR
 	OP_K8_R4    "ldi"
 	OP_R5_K16   "lds"
 	OP_CONST    "lpm"
@@ -189,13 +198,13 @@ static char op_names[]=
 	OP_CONST    "sez"
 	OP_CONST    "sleep"
 	OP_CONST    "spm"
-	OP_CONST    "spm Z+"
+	OP_CONST    "spm" SHORT_SPACE_Z_PLUS_STR
 	OP_R5_K16   "sts"
 	OP_RD_D4_R4 "sub"
 	OP_K8_R4    "subi"
 	OP_R5       "swap"
 	OP_CONST    "wdr"
-	OP_R5       "xch Z,"
+	OP_R5       "xch" SHORT_SPACE_Z_COMMA_STR
 
 	OP_Q_R5     "ld"
 	OP_Q_R5     "st"
@@ -320,7 +329,7 @@ static uint16_t op_bits[]={
 	U16(1001, 0010, 0000, 0000), // st
 };
 
-#define IS_METADATA(c) ((c)>='A' && (c)<=OP_K22_CHR)
+#define IS_METADATA(c) ((c)<=OP_LAST)
 
 #define ARG_EOF 0
 #define ARG_REG 1
@@ -381,34 +390,51 @@ static void append_hexnibble(uint8_t num){
 	}
 }
 
+static uint8_t get_bit(uint8_t** ptr, uint8_t* curbit){
+	uint8_t ret=(**ptr)&(1<<*curbit);
+	*curbit=(*curbit+1)&7;
+	if(*curbit==0){
+		(*ptr)++;
+	}
+	return ret;
+}
+
+static uint8_t get_bits(uint8_t** ptr, uint8_t* curbit, uint8_t cnt){
+	uint8_t ret=0;
+	while(cnt--){
+		ret*=2;
+		ret|=get_bit(ptr, curbit);
+	}
+	return ret;
+}
+
 static uint16_t next;
-static uint8_t arguments[16];
 
 static void append_arguments();
 static void decode(uint16_t op){
 	reset();
-	char* ptr=op_names;
+	uint8_t* ptr=op_names;
+	uint8_t arguments[16];
 	uint8_t* args=arguments+sizeof(arguments);
 	while(arguments!=args){
-		*args--=ARG_EOF;
+		*--args=ARG_EOF;
 	}
 	*args=ARG_RESERVED;
-	for(uint8_t i=0; i<sizeof(op_bits)/sizeof(*op_bits); i++){
+	for(uint8_t i=0; i<OP_NAMES_NUM; i++){
 		while( !IS_METADATA(*ptr) ){
 			ptr++;
 		}
-		uint8_t op_type=*ptr++ - 'A';
+		uint8_t op_type=*ptr++ - OP_FIRST;
 		if( (op & type_masks[op_type]) == op_bits[i] ){
 			// Found match. Let's print the name first.
 			while( !IS_METADATA(*ptr)){
-				append(*ptr);
-				ptr++;
+				append(*ptr++);
 			}
 			uint8_t dreg=(op>>4)&0x1f;
 			uint8_t reg=(op&0xf)|((op&0x200)>>5);
 
 			switch(op_type){
-				case OP_R5_Y_P_CHR-'A':
+				case OP_R5_Y_P_CHR:
 				{
 					uint8_t xyz=(op>>2u)&3u;
 					uint8_t p=(op&3u);
@@ -439,7 +465,7 @@ static void decode(uint16_t op){
 						}
 					}
 				} break;
-				case OP_R5_K16_CHR-'A':
+				case OP_R5_K16_CHR:
 				{
 					if(op&0x0200){ // sts
 						*args++=ARG_HEXWORD;
@@ -456,7 +482,7 @@ static void decode(uint16_t op){
 						*args++=next;
 					}
 				} break;
-				case OP_K12_CHR-'A':
+				case OP_K12_CHR:
 				{
 					uint16_t k=op&0xfff;
 					*args++=ARG_OFFSET;
@@ -464,7 +490,7 @@ static void decode(uint16_t op){
 					*args++=k>>8;
 					*args++=k;
 				} break;
-				case OP_Q_R5_CHR-'A':
+				case OP_Q_R5_CHR:
 				{
 					uint8_t q=(op&7)|((op&0x0c00u)>>7)|((op&0x2000u)>>8);
 					char yz=((op>>3)&1);
@@ -487,15 +513,15 @@ static void decode(uint16_t op){
 						*args++=q;
 					}
 				} break;
-				case OP_RD_D4_R4_CHR-'A':
-				case OP_D3_R3_CHR-'A':
-				case OP_D4_R4_CHR-'A':
+				case OP_RD_D4_R4_CHR:
+				case OP_D3_R3_CHR:
+				case OP_D4_R4_CHR:
 				{
-					if(op_type+'A'==OP_D3_R3_CHR){
+					if(op_type+OP_FIRST==OP_D3_R3_CHR){
 						dreg=(dreg&7)+16;
 						reg = (reg&7)+16;
 					}
-					else if(op_type+'A'==OP_D4_R4_CHR){
+					else if(op_type+OP_FIRST==OP_D4_R4_CHR){
 						if(op&0x0100u){ // movw
 							dreg=(dreg&0xf)*2;
 							reg = (reg&0xf)*2;
@@ -510,21 +536,21 @@ static void decode(uint16_t op){
 					*args++=ARG_REG;
 					*args++=reg;
 				} break;
-				case OP_K6_R2_CHR-'A':
+				case OP_K6_R2_CHR:
 				{
 					*args++=ARG_REG;
 					*args++=(dreg&3)*2+24;
 					*args++=ARG_HEXBYTE;
 					*args++=(op&0xf)|((op>>2)&0x30);
 				} break;
-				case OP_K8_R4_CHR-'A':
+				case OP_K8_R4_CHR:
 				{
 					*args++=ARG_REG;
 					*args++=(dreg&0xf)+16;
 					*args++=ARG_HEXBYTE;
 					*args++=(op&0xf)|((op>>4)&0xf0);
 				} break;
-				case OP_R5_CHR-'A':
+				case OP_R5_CHR:
 				{
 					*args++=ARG_REG;
 					*args++=dreg;
@@ -534,38 +560,38 @@ static void decode(uint16_t op){
 						*args++=0;
 					}
 				} break;
-				case OP_R5_B_CHR-'A':
+				case OP_R5_B_CHR:
 				{
 					*args++=ARG_REG;
 					*args++=dreg;
 					*args++=ARG_DECBYTE;
 					*args++=op&7;
 				} break;
-				case OP_K7_CHR-'A':
+				case OP_K7_CHR:
 				{
 					*args++=ARG_OFFSET;
 					*args++=7;
 					*args++=0;
 					*args++=(op>>3)&0x7f;
 				} break;
-				case OP_K4_CHR-'A':
+				case OP_K4_CHR:
 				{
 					*args++=ARG_DECBYTE;
 					*args++=(op>>4)&0xf;
 				} break;
-				case OP_K22_CHR-'A':
+				case OP_K22_CHR:
 				{
 					*args++=ARG_HEX3B;
 					*args++=(op&1)|((op>>3)&0x3e);
 				} break;
-				case OP_IO_B_CHR-'A':
+				case OP_IO_B_CHR:
 				{
 					*args++=ARG_HEXBYTE;
 					*args++=(op>>3)&0x1f;
 					*args++=ARG_DECBYTE;
 					*args++=op&7;
 				} break;
-				case OP_IO_R5_CHR-'A':
+				case OP_IO_R5_CHR:
 				{
 					uint8_t a=(op&0xf)|((op>>5)&0x30);
 					if(op&0x0800){ // out
@@ -581,7 +607,7 @@ static void decode(uint16_t op){
 						*args++=a;
 					}
 				} break;
-				case OP_CONST_CHR-'A':
+				case OP_CONST_CHR:
 				{
 					*args++=ARG_EOF;
 				} break;
@@ -589,10 +615,10 @@ static void decode(uint16_t op){
 			break;
 		}
 	}
-	append_arguments();
+	append_arguments(arguments);
 }
 
-static void append_arguments(){
+static void append_arguments(uint8_t* arguments){
 	uint8_t* args=arguments;
 	while(1){
 		uint8_t byte=*args++;
@@ -687,7 +713,19 @@ static void append_arguments(){
 int main(){
 #ifndef F_CPU
 	for(int i=0; i<(1<<16); i++){
-		decode(i); printf("%s\n", buffer);
+		decode(i); 
+		for(char* b=buffer; *b; b++){
+			if(*b==SHORT_SPACE_Z_PLUS_CHR){
+				printf(" Z+");
+			}
+			else if(*b==SHORT_SPACE_Z_COMMA_CHR){
+				printf(" Z,");
+			}
+			else{
+				printf("%c", *b);
+			}
+		}
+		printf("\n");
 	}
 
 #else
