@@ -366,52 +366,13 @@ void append_decnum(uint16_t num){
 }
 
 void append_hexnibble(uint8_t num){
+	num&=0xfu;
 	if(num<10){
 		append('0'+num);
 	}
 	else{
 		append(('a'-10)+num);
 	}
-}
-
-void append_hex32(uint32_t val){
-	append('0');
-	if(val){
-		append('x');
-		uint8_t nib=(uint8_t)28u;
-		while( !((0xful<<nib) & val) ){
-			nib-=(uint8_t)4u;
-		}
-		for(; nib!=(uint8_t)0xfcu; nib-=(uint8_t)4u){
-			append_hexnibble( (val>>nib) & 0xfu );
-		}
-	}
-}
-
-void append_hex16(uint16_t val){
-	append('0');
-	append('x');
-	for(uint8_t nib=(uint8_t)0xcu; nib!=(uint8_t)0xfcu; nib-=(uint8_t)4u){
-		append_hexnibble( (val>>nib) & 0xfu );
-	}
-}
-
-void append_hexbyte(uint8_t num){
-	append('0');
-	append('x');
-	append_hexnibble(num>>4);
-	append_hexnibble(num&0xF);
-}
-
-void append_reg(uint8_t num){
-	append('r');
-	append_decnum(num);
-}
-
-void append_regspace(uint8_t num){
-	append_reg(num);
-	append(',');
-	append(' ');
 }
 
 void decode(uint16_t op, uint16_t next){
@@ -633,35 +594,43 @@ void decode(uint16_t op, uint16_t next){
 				}
 				append(' ');
 				switch(byte){
-					case ARG_REG:
-					{
-						append('r');
-						append_decnum(arguments[j++]);
-					} break;
 					case ARG_HEXBYTE:
-					{
-						append_hexbyte(arguments[j++]);
-					} break;
 					case ARG_HEXWORD:
 					{
-						uint16_t word=arguments[j++];
-						word=(word<<8)|arguments[j++];
-						append_hex16(word);
+						append('0');
+						append('x');
+						uint8_t bytes=byte-(ARG_HEXBYTE-1);
+						while(bytes--){
+							uint8_t num=arguments[j++];
+							append_hexnibble(num>>4);
+							append_hexnibble(num);
+						}
 					} break;
 					case ARG_HEX3B:
 					{
-						uint32_t n=arguments[j++];
-						n=(n<<16)|next;
-						append_hex32(n*2);
+						uint32_t val=arguments[j++];
+						val=(val<<16) | next;
+						append('0');
+						if(val){
+							append('x');
+							uint8_t nib=27u;
+							while( !((val>>nib) & 0xfu) ){
+								nib-=4u;
+							}
+							for(; nib!=0xfbu; nib-=4u){
+								append_hexnibble(val>>nib);
+							}
+						}
 					} break;
-					case ARG_DECBYTE:
-					{
+					case ARG_REG:
+						append('r');
+					case ARG_DECBYTE: // Fallthrough.
 						append_decnum(arguments[j++]);
-					} break;
+						break;
 					case ARG_OFFSET:
 					{
 						append('.');
-						uint16_t bits=arguments[j++];
+						uint8_t bits=arguments[j++];
 						uint16_t k=arguments[j++];
 						k=(k<<8)|arguments[j++];
 						if(k&(1u<<(bits-1))){
@@ -685,17 +654,9 @@ void decode(uint16_t op, uint16_t next){
 						uint8_t p=arguments[j++];
 						uint8_t xyz=arguments[j++];
 						xyz=('X'+3)-xyz-!xyz;
-						switch(p){
-							case 1:
-								append(xyz);
-								append('+');
-								break;
-							default:
-								append('-');
-							case 0: // fallthrough
-								append(xyz);
-								break;
-						}
+						if(p==2){ append('-'); }
+						append(xyz);
+						if(p==1){ append('+'); }
 					} break;
 					case ARG_YPQ:
 					{
