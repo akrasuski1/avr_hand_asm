@@ -419,12 +419,13 @@ static void append_arguments(){
 				append('0');
 				if(val){
 					append('x');
-					uint8_t nib=27u;
-					while( !((val>>nib) & 0xfu) ){
-						nib-=4u;
-					}
-					for(; nib!=0xfbu; nib-=4u){
-						append_hexnibble(val>>nib);
+					uint8_t any=0;
+					for(uint8_t nib=27u; nib!=0xfbu; nib-=4u){
+						uint8_t x=val>>nib;
+						any|=x;
+						if(any){
+							append_hexnibble(x);
+						}
 					}
 				}
 			} break;
@@ -452,7 +453,7 @@ static void append_arguments(){
 			{
 				reset();
 				for(const char* c="[reserved]"; *c; c++){
-					*buf++=*c;
+					append(*c);
 				}
 			} break;
 			case ARG_MXP:
