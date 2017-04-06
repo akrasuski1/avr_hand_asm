@@ -360,19 +360,20 @@ static uint16_t divu10(uint16_t n){
 	}
 }
 
+// Up to 9999.
 static void append_decnum(uint16_t num){
-	char digs[6];
-	uint8_t i=0;
+	static uint8_t digs[4];
+	uint8_t* dig=digs;
 	while(num){
 		uint16_t divided=divu10(num);
-		digs[i++]=num-divided*10u;
+		*dig++=num-divided*10u;
 		num=divided;
 	}
-	if(i==0){
+	if(dig==digs){
 		append('0');
 	}
-	while(i--){
-		append(digs[i]+'0');
+	while(dig--!=digs){
+		append(*dig +'0');
 	}
 }
 
