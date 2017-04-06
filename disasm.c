@@ -383,11 +383,11 @@ static uint16_t next;
 static uint8_t arguments[16];
 
 static void append_arguments(){
-	uint8_t j=0;
+	uint8_t* args=arguments;
 	while(1){
-		uint8_t byte=arguments[j++];
+		uint8_t byte=*args++;
 		if(byte==0){ return; }
-		if(j!=1u){
+		if(args!=arguments+1){
 			append(',');
 		}
 		append(' ');
@@ -399,14 +399,14 @@ static void append_arguments(){
 				append('x');
 				uint8_t bytes=byte-(ARG_HEXBYTE-1);
 				while(bytes--){
-					uint8_t num=arguments[j++];
+					uint8_t num=*args++;
 					append_hexnibble(num>>4);
 					append_hexnibble(num);
 				}
 			} break;
 			case ARG_HEX3B:
 			{
-				uint32_t val=arguments[j++];
+				uint32_t val=*args++;
 				val=(val<<16) | next;
 				append('0');
 				if(val){
@@ -423,14 +423,14 @@ static void append_arguments(){
 			case ARG_REG:
 				append('r');
 			case ARG_DECBYTE: // Fallthrough.
-				append_decnum(arguments[j++]);
+				append_decnum(*args++);
 				break;
 			case ARG_OFFSET:
 			{
 				append('.');
-				uint8_t bits=arguments[j++];
-				uint16_t k=arguments[j++];
-				k=(k<<8)|arguments[j++];
+				uint8_t bits=*args++;
+				uint16_t k=*args++;
+				k=(k<<8)|*args++;
 				if(k&(1u<<(bits-1))){
 					append('-');
 					k=(1u<<bits)-k;
@@ -449,8 +449,8 @@ static void append_arguments(){
 			} break;
 			case ARG_MXP:
 			{
-				uint8_t p=arguments[j++];
-				uint8_t xyz=arguments[j++];
+				uint8_t p=*args++;
+				uint8_t xyz=*args++;
 				xyz=('X'+3)-xyz-!xyz;
 				if(p==2){ append('-'); }
 				append(xyz);
@@ -458,8 +458,8 @@ static void append_arguments(){
 			} break;
 			case ARG_YPQ:
 			{
-				uint8_t yz='Z'-arguments[j++];
-				uint8_t q=arguments[j++];
+				uint8_t yz='Z'-*args++;
+				uint8_t q=*args++;
 				append(yz);
 				if(q){
 					append('+');
