@@ -473,6 +473,11 @@ static void append_arguments(){
 static void decode(uint16_t op){
 	reset();
 	char* ptr=op_names;
+	uint8_t* args=arguments+sizeof(arguments);
+	while(arguments!=args){
+		*args--=ARG_EOF;
+	}
+	*args=ARG_RESERVED;
 	for(uint8_t i=0; ; i++){
 		while( !IS_METADATA(*ptr) ){
 			ptr++;
@@ -485,10 +490,6 @@ static void decode(uint16_t op){
 				append(*ptr);
 				ptr++;
 			}
-			uint8_t j=16;
-			while(j--){
-				arguments[j]=ARG_EOF;
-			}
 			uint8_t dreg=(op>>4)&0x1f;
 			uint8_t st=!!(op&0x0200u);
 			uint8_t reg=(op&0xf)|((op&0x200)>>5);
@@ -498,10 +499,8 @@ static void decode(uint16_t op){
 					char xyz=(op>>2u)&3u;
 					uint8_t p=(op&3u);
 
-					if(xyz==1u || p==3u || (p==0u && xyz!=3u)){
-						arguments[0]=ARG_RESERVED;
-					}
-					else{
+					// This complicated condition is check for validity.
+					if(xyz!=1u && p!=3u && (p!=0u || xyz==3u)){
 						// Possible formats:
 						//             p st
 						// st N+, rD | 1 1
@@ -510,19 +509,20 @@ static void decode(uint16_t op){
 						// ld rD, N+ | 1 0
 						// ld rD, -N | 2 0
 						// ld rD, X  | 0 0
-						uint8_t k=0;
-						for(uint8_t j=0; j<2 ; j++){
-							if(st^j){ // st
-								arguments[k++]=ARG_MXP;
-								arguments[k++]=p;
-								arguments[k++]=xyz;
-							}
-							else{
-								arguments[k++]=ARG_REG;
-								arguments[k++]=dreg;
-							}
+						if(st){ // st
+							*args++=ARG_MXP;
+							*args++=p;
+							*args++=xyz;
+							*args++=ARG_REG;
+							*args++=dreg;
 						}
-						// TODO: maybe no for?
+						else{
+							*args++=ARG_REG;
+							*args++=dreg;
+							*args++=ARG_MXP;
+							*args++=p;
+							*args++=xyz;
+						}
 					}
 				} break;
 				case OP_K12_CHR:
@@ -541,18 +541,19 @@ static void decode(uint16_t op){
 					if(q){
 						append('d');
 					}
-					uint8_t k=0;
-					for(uint8_t j=0; j<2; j++){
-						if(st^j){ // st
-							arguments[k++]=ARG_YPQ;
-							arguments[k++]=yz;
-							arguments[k++]=q;
-						}
-						else{ // ld
-							arguments[k++]=ARG_REG;
-							arguments[k++]=dreg;
-						}
-						// TODO: maybe no for?
+					if(st){ // st
+						*args++=ARG_YPQ;
+						*args++=yz;
+						*args++=q;
+						*args++=ARG_REG;
+						*args++=dreg;
+					}
+					else{
+						*args++=ARG_REG;
+						*args++=dreg;
+						*args++=ARG_YPQ;
+						*args++=yz;
+						*args++=q;
 					}
 				} break;
 				case OP_RD_D4_R4_CHR:
@@ -676,6 +677,7 @@ static void decode(uint16_t op){
 				case OP_ANY_CHR:
 				default:
 				{
+					*args=ARG_EOF;
 				} break;
 			}
 			break;
