@@ -354,12 +354,19 @@ static void append(char c){
 	*buf++=c;
 }
 
+static uint16_t divu10(uint16_t n){
+	for(uint16_t i=0; ; i++){
+		if(i*10u>n){ return i-1u; }
+	}
+}
+
 static void append_decnum(uint16_t num){
-	char digs[6]={};
+	char digs[6];
 	uint8_t i=0;
 	while(num){
-		digs[i++]=num%10;
-		num/=10;
+		uint16_t divided=divu10(num);
+		digs[i++]=num-divided*10u;
+		num=divided;
 	}
 	if(i==0){
 		append('0');
