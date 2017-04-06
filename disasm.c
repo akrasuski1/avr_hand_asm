@@ -1,8 +1,8 @@
-#include <stdio.h>
-#include <stdint.h>
-
 #ifdef F_CPU
 	#include <avr/io.h>
+#else
+	#include <stdio.h>
+	#include <stdint.h>
 #endif
 
 #define OP_CONST "A"
@@ -390,6 +390,215 @@ static void append_hexnibble(uint8_t num){
 static uint16_t next;
 static uint8_t arguments[16];
 
+static void append_arguments();
+static void decode(uint16_t op){
+	reset();
+	char* ptr=op_names;
+	for(uint8_t i=0; ; i++){
+		while( !IS_METADATA(*ptr) ){
+			ptr++;
+		}
+		uint8_t op_type=*ptr++ - 'A';
+		if( (op & type_masks[op_type]) == op_bits[i] ){
+			// Found match. Let's print the name first.
+			while( !IS_METADATA(*ptr)){
+				append(*ptr);
+				ptr++;
+			}
+			uint8_t* args=arguments+sizeof(arguments);
+			while(arguments!=args){
+				*args--=ARG_EOF;
+			}
+			*args=ARG_RESERVED;
+			uint8_t dreg=(op>>4)&0x1f;
+			uint8_t reg=(op&0xf)|((op&0x200)>>5);
+
+			switch(op_type+'A'){
+				case OP_R5_Y_P_CHR:
+				{
+					uint8_t xyz=(op>>2u)&3u;
+					uint8_t p=(op&3u);
+
+					// This complicated condition is check for validity.
+					if((p!=0u || xyz==3u) && xyz!=1u && p!=3u){
+						// Possible formats:
+						//             p st
+						// st N+, rD | 1 1
+						// st -N, rD | 2 1
+						// st X, rD  | 0 1
+						// ld rD, N+ | 1 0
+						// ld rD, -N | 2 0
+						// ld rD, X  | 0 0
+						if(op&0x0200u){ // st
+							*args++=ARG_MXP;
+							*args++=p;
+							*args++=xyz;
+							*args++=ARG_REG;
+							*args++=dreg;
+						}
+						else{ // ld
+							*args++=ARG_REG;
+							*args++=dreg;
+							*args++=ARG_MXP;
+							*args++=p;
+							*args++=xyz;
+						}
+					}
+				} break;
+				case OP_K12_CHR:
+				{
+					uint16_t k=op&0xfff;
+					*args++=ARG_OFFSET;
+					*args++=12;
+					*args++=k>>8;
+					*args++=k;
+				} break;
+				case OP_Q_R5_CHR:
+				{
+					uint8_t q=(op&7)|((op&0x0c00u)>>7)|((op&0x2000u)>>8);
+					char yz=((op>>3)&1);
+
+					if(q){
+						append('d');
+					}
+					if(op&0x0200u){ // st
+						*args++=ARG_YPQ;
+						*args++=yz;
+						*args++=q;
+						*args++=ARG_REG;
+						*args++=dreg;
+					}
+					else{ // ld
+						*args++=ARG_REG;
+						*args++=dreg;
+						*args++=ARG_YPQ;
+						*args++=yz;
+						*args++=q;
+					}
+				} break;
+				case OP_RD_D4_R4_CHR:
+				case OP_D3_R3_CHR:
+				case OP_D4_R4_CHR:
+				{
+					if(op_type+'A'==OP_D3_R3_CHR){
+						dreg=(dreg&7)+16;
+						reg = (reg&7)+16;
+					}
+					else if(op_type+'A'==OP_D4_R4_CHR){
+						if(op&0x0100u){ // movw
+							dreg=(dreg&0xf)*2;
+							reg = (reg&0xf)*2;
+						}
+						else{ // muls
+							dreg=(dreg&0xf)+16;
+							reg = (reg&0xf)+16;
+						}
+					}
+					*args++=ARG_REG;
+					*args++=dreg;
+					*args++=ARG_REG;
+					*args++=reg;
+				} break;
+				case OP_K6_R2_CHR:
+				{
+					*args++=ARG_REG;
+					*args++=(dreg&3)*2+24;
+					*args++=ARG_HEXBYTE;
+					*args++=(op&0xf)|((op>>2)&0x30);
+				} break;
+				case OP_K8_R4_CHR:
+				{
+					*args++=ARG_REG;
+					*args++=(dreg&0xf)+16;
+					*args++=ARG_HEXBYTE;
+					*args++=(op&0xf)|((op>>4)&0xf0);
+				} break;
+				case OP_R5_CHR:
+				{
+					*args++=ARG_REG;
+					*args++=dreg;
+					if((op&0xfe0cu)==0x9004){ // lpm/elpm Z(+)
+						*args++=ARG_MXP;
+						*args++=op&1;
+						*args++=0;
+					}
+				} break;
+				case OP_R5_B_CHR:
+				{
+					*args++=ARG_REG;
+					*args++=dreg;
+					*args++=ARG_DECBYTE;
+					*args++=op&7;
+				} break;
+				case OP_K7_CHR:
+				{
+					*args++=ARG_OFFSET;
+					*args++=7;
+					*args++=0;
+					*args++=(op>>3)&0x7f;
+				} break;
+				case OP_K4_CHR:
+				{
+					*args++=ARG_DECBYTE;
+					*args++=(op>>4)&0xf;
+				} break;
+				case OP_K22_CHR:
+				{
+					*args++=ARG_HEX3B;
+					*args++=(op&1)|((op>>3)&0x3e);
+				} break;
+				case OP_R5_K16_CHR:
+				{
+					if(op&0x0200){ // sts
+						*args++=ARG_HEXWORD;
+						*args++=next>>8;
+						*args++=next;
+						*args++=ARG_REG;
+						*args++=dreg;
+					}
+					else{ // lds
+						*args++=ARG_REG;
+						*args++=dreg;
+						*args++=ARG_HEXWORD;
+						*args++=next>>8;
+						*args++=next;
+					}
+				} break;
+				case OP_IO_B_CHR:
+				{
+					*args++=ARG_HEXBYTE;
+					*args++=(op>>3)&0x1f;
+					*args++=ARG_DECBYTE;
+					*args++=op&7;
+				} break;
+				case OP_IO_R5_CHR:
+				{
+					uint8_t a=(op&0xf)|((op>>5)&0x30);
+					if(op&0x0800){ // out
+						*args++=ARG_HEXBYTE;
+						*args++=a;
+						*args++=ARG_REG;
+						*args++=dreg;
+					}
+					else{ // in
+						*args++=ARG_REG;
+						*args++=dreg;
+						*args++=ARG_HEXBYTE;
+						*args++=a;
+					}
+				} break;
+				case OP_CONST_CHR:
+				case OP_ANY_CHR:
+				{
+					*args++=ARG_EOF;
+				} break;
+			}
+			append_arguments();
+			break;
+		}
+	}
+}
+
 static void append_arguments(){
 	uint8_t* args=arguments;
 	while(1){
@@ -482,224 +691,6 @@ static void append_arguments(){
 	}
 }
 
-static void decode(uint16_t op){
-	reset();
-	char* ptr=op_names;
-	uint8_t* args=arguments+sizeof(arguments);
-	while(arguments!=args){
-		*args--=ARG_EOF;
-	}
-	*args=ARG_RESERVED;
-	for(uint8_t i=0; ; i++){
-		while( !IS_METADATA(*ptr) ){
-			ptr++;
-		}
-		uint8_t op_type=ptr[0]-'A';
-		ptr++;
-		if( (op & type_masks[op_type]) == op_bits[i] ){
-			// Found match. Let's print the name first.
-			while( !IS_METADATA(*ptr)){
-				append(*ptr);
-				ptr++;
-			}
-			uint8_t dreg=(op>>4)&0x1f;
-			uint8_t st=!!(op&0x0200u);
-			uint8_t reg=(op&0xf)|((op&0x200)>>5);
-			switch(op_type+'A'){
-				case OP_R5_Y_P_CHR:
-				{
-					char xyz=(op>>2u)&3u;
-					uint8_t p=(op&3u);
-
-					// This complicated condition is check for validity.
-					if(xyz!=1u && p!=3u && (p!=0u || xyz==3u)){
-						// Possible formats:
-						//             p st
-						// st N+, rD | 1 1
-						// st -N, rD | 2 1
-						// st X, rD  | 0 1
-						// ld rD, N+ | 1 0
-						// ld rD, -N | 2 0
-						// ld rD, X  | 0 0
-						if(st){ // st
-							*args++=ARG_MXP;
-							*args++=p;
-							*args++=xyz;
-							*args++=ARG_REG;
-							*args++=dreg;
-						}
-						else{ // ld
-							*args++=ARG_REG;
-							*args++=dreg;
-							*args++=ARG_MXP;
-							*args++=p;
-							*args++=xyz;
-						}
-					}
-				} break;
-				case OP_K12_CHR:
-				{
-					int16_t k=op&0xfff;
-					*args++=ARG_OFFSET;
-					*args++=12;
-					*args++=k>>8;
-					*args++=k;
-				} break;
-				case OP_Q_R5_CHR:
-				{
-					uint8_t q=(op&7)|((op&0x0c00u)>>7)|((op&0x2000u)>>8);
-					char yz=((op>>3)&1);
-
-					if(q){
-						append('d');
-					}
-					if(st){ // st
-						*args++=ARG_YPQ;
-						*args++=yz;
-						*args++=q;
-						*args++=ARG_REG;
-						*args++=dreg;
-					}
-					else{ // ld
-						*args++=ARG_REG;
-						*args++=dreg;
-						*args++=ARG_YPQ;
-						*args++=yz;
-						*args++=q;
-					}
-				} break;
-				case OP_RD_D4_R4_CHR:
-				{
-					*args++=ARG_REG;
-					*args++=dreg;
-					*args++=ARG_REG;
-					*args++=reg;
-				} break;
-				case OP_D3_R3_CHR:
-				{
-					*args++=ARG_REG;
-					*args++=(dreg&7)+16;
-					*args++=ARG_REG;
-					*args++=(reg&7)+16;
-				} break;
-				case OP_D4_R4_CHR:
-				{
-					reg&=0xf;
-					dreg&=0xf;
-					if(op&0x0100u){ // movw
-						*args++=ARG_REG;
-						*args++=dreg*2;
-						*args++=ARG_REG;
-						*args++=reg*2;
-					}
-					else{ // muls
-						*args++=ARG_REG;
-						*args++=dreg+16;
-						*args++=ARG_REG;
-						*args++=reg+16;
-					}
-				} break;
-				case OP_K6_R2_CHR:
-				{
-					*args++=ARG_REG;
-					*args++=(dreg&3)*2+24;
-					*args++=ARG_HEXBYTE;
-					*args++=(op&0xf)|((op>>2)&0x30);
-				} break;
-				case OP_K8_R4_CHR:
-				{
-					*args++=ARG_REG;
-					*args++=(dreg&0xf)+16;
-					*args++=ARG_HEXBYTE;
-					*args++=(op&0xf)|((op>>4)&0xf0);
-				} break;
-				case OP_R5_CHR:
-				{
-					*args++=ARG_REG;
-					*args++=dreg;
-					if((op&0xfe0cu)==0x9004){ // lpm/elpm Z(+)
-						*args++=ARG_MXP;
-						*args++=op&1;
-						*args++=0;
-					}
-				} break;
-				case OP_R5_B_CHR:
-				{
-					*args++=ARG_REG;
-					*args++=dreg;
-					*args++=ARG_DECBYTE;
-					*args++=op&7;
-				} break;
-				case OP_K7_CHR:
-				{
-					*args++=ARG_OFFSET;
-					*args++=7;
-					*args++=0;
-					*args++=(op>>3)&0x7f;
-				} break;
-				case OP_K4_CHR:
-				{
-					*args++=ARG_DECBYTE;
-					*args++=(op>>4)&0xf;
-				} break;
-				case OP_K22_CHR:
-				{
-					*args++=ARG_HEX3B;
-					*args++=(op&1)|((op>>3)&0x3e);
-				} break;
-				case OP_R5_K16_CHR:
-				{
-					if(op&0x0200){ // sts
-						*args++=ARG_HEXWORD;
-						*args++=next>>8;
-						*args++=next;
-						*args++=ARG_REG;
-						*args++=dreg;
-					}
-					else{ // lds
-						*args++=ARG_REG;
-						*args++=dreg;
-						*args++=ARG_HEXWORD;
-						*args++=next>>8;
-						*args++=next;
-					}
-				} break;
-				case OP_IO_B_CHR:
-				{
-					*args++=ARG_HEXBYTE;
-					*args++=(op>>3)&0x1f;
-					*args++=ARG_DECBYTE;
-					*args++=op&7;
-				} break;
-				case OP_IO_R5_CHR:
-				{
-					uint8_t a=(op&0xf)|((op>>5)&0x30);
-					if(op&0x0800){ // out
-						*args++=ARG_HEXBYTE;
-						*args++=a;
-						*args++=ARG_REG;
-						*args++=dreg;
-					}
-					else{ // in
-						*args++=ARG_REG;
-						*args++=dreg;
-						*args++=ARG_HEXBYTE;
-						*args++=a;
-					}
-				} break;
-				case OP_CONST_CHR:
-				case OP_ANY_CHR:
-				default:
-				{
-					*args=ARG_EOF;
-				} break;
-			}
-			break;
-		}
-	}
-	append_arguments();
-}
-
 int main(){
 #ifndef F_CPU
 	for(int i=0; i<(1<<16); i++){
@@ -708,6 +699,7 @@ int main(){
 
 #else
 	for(int i=0; i<10; i++){
+		next=i;
 		decode(i);
 		DDRB=*buf;
 		DDRB=buf[1];
