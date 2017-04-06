@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#ifdef F_CPU
+	#include <avr/io.h>
+#endif
+
 #define OP_CONST "A"
 // xxxx xxxx xxxx xxxx <>
 #define OP_D4_R4 "B"
@@ -375,7 +379,98 @@ static void append_hexnibble(uint8_t num){
 	}
 }
 
-static void decode(uint16_t op, uint16_t next){
+static uint16_t next;
+static uint8_t arguments[16];
+
+static void append_arguments(){
+	uint8_t j=0;
+	while(1){
+		uint8_t byte=arguments[j++];
+		if(byte==0){ return; }
+		if(j!=1u){
+			append(',');
+		}
+		append(' ');
+		switch(byte){
+			case ARG_HEXBYTE:
+			case ARG_HEXWORD:
+			{
+				append('0');
+				append('x');
+				uint8_t bytes=byte-(ARG_HEXBYTE-1);
+				while(bytes--){
+					uint8_t num=arguments[j++];
+					append_hexnibble(num>>4);
+					append_hexnibble(num);
+				}
+			} break;
+			case ARG_HEX3B:
+			{
+				uint32_t val=arguments[j++];
+				val=(val<<16) | next;
+				append('0');
+				if(val){
+					append('x');
+					uint8_t nib=27u;
+					while( !((val>>nib) & 0xfu) ){
+						nib-=4u;
+					}
+					for(; nib!=0xfbu; nib-=4u){
+						append_hexnibble(val>>nib);
+					}
+				}
+			} break;
+			case ARG_REG:
+				append('r');
+			case ARG_DECBYTE: // Fallthrough.
+				append_decnum(arguments[j++]);
+				break;
+			case ARG_OFFSET:
+			{
+				append('.');
+				uint8_t bits=arguments[j++];
+				uint16_t k=arguments[j++];
+				k=(k<<8)|arguments[j++];
+				if(k&(1u<<(bits-1))){
+					append('-');
+					k=(1u<<bits)-k;
+				}
+				else{
+					append('+');
+				}
+				append_decnum(k*2);
+			} break;
+			case ARG_RESERVED:
+			{
+				reset();
+				for(const char* c="[reserved]"; *c; c++){
+					*buf++=*c;
+				}
+			} break;
+			case ARG_MXP:
+			{
+				uint8_t p=arguments[j++];
+				uint8_t xyz=arguments[j++];
+				xyz=('X'+3)-xyz-!xyz;
+				if(p==2){ append('-'); }
+				append(xyz);
+				if(p==1){ append('+'); }
+			} break;
+			case ARG_YPQ:
+			{
+				uint8_t yz='Z'-arguments[j++];
+				uint8_t q=arguments[j++];
+				append(yz);
+				if(q){
+					append('+');
+					append_decnum(q);
+				}
+			} break;
+		}
+	}
+}
+
+static void decode(uint16_t op){
 	reset();
 	char* ptr=op_names;
 	for(uint8_t i=0; ; i++){
@@ -390,14 +485,12 @@ static void decode(uint16_t op, uint16_t next){
 				append(*ptr);
 				ptr++;
 			}
-			uint8_t arguments[16];
 			uint8_t j=16;
 			while(j--){
 				arguments[j]=ARG_EOF;
 			}
 			uint8_t dreg=(op>>4)&0x1f;
 			uint8_t st=!!(op&0x0200u);
-			uint8_t b=op&7;
 			uint8_t reg=(op&0xf)|((op&0x200)>>5);
 			switch(op_type+'A'){
 				case OP_R5_Y_P_CHR:
@@ -520,7 +613,7 @@ static void decode(uint16_t op, uint16_t next){
 					arguments[0]=ARG_REG;
 					arguments[1]=dreg;
 					arguments[2]=ARG_DECBYTE;
-					arguments[3]=b;
+					arguments[3]=op&7;
 				} break;
 				case OP_K7_CHR:
 				{
@@ -561,7 +654,7 @@ static void decode(uint16_t op, uint16_t next){
 					arguments[0]=ARG_HEXBYTE;
 					arguments[1]=(op>>3)&0x1f;
 					arguments[2]=ARG_DECBYTE;
-					arguments[3]=b;
+					arguments[3]=op&7;
 				} break;
 				case OP_IO_R5_CHR:
 				{
@@ -585,106 +678,23 @@ static void decode(uint16_t op, uint16_t next){
 				{
 				} break;
 			}
-			j=0;
-			while(1){
-				uint8_t byte=arguments[j++];
-				if(byte==0){ return; }
-				if(j!=1u){
-					append(',');
-				}
-				append(' ');
-				switch(byte){
-					case ARG_HEXBYTE:
-					case ARG_HEXWORD:
-					{
-						append('0');
-						append('x');
-						uint8_t bytes=byte-(ARG_HEXBYTE-1);
-						while(bytes--){
-							uint8_t num=arguments[j++];
-							append_hexnibble(num>>4);
-							append_hexnibble(num);
-						}
-					} break;
-					case ARG_HEX3B:
-					{
-						uint32_t val=arguments[j++];
-						val=(val<<16) | next;
-						append('0');
-						if(val){
-							append('x');
-							uint8_t nib=27u;
-							while( !((val>>nib) & 0xfu) ){
-								nib-=4u;
-							}
-							for(; nib!=0xfbu; nib-=4u){
-								append_hexnibble(val>>nib);
-							}
-						}
-					} break;
-					case ARG_REG:
-						append('r');
-					case ARG_DECBYTE: // Fallthrough.
-						append_decnum(arguments[j++]);
-						break;
-					case ARG_OFFSET:
-					{
-						append('.');
-						uint8_t bits=arguments[j++];
-						uint16_t k=arguments[j++];
-						k=(k<<8)|arguments[j++];
-						if(k&(1u<<(bits-1))){
-							append('-');
-							k=(1u<<bits)-k;
-						}
-						else{
-							append('+');
-						}
-						append_decnum(k*2);
-					} break;
-					case ARG_RESERVED:
-					{
-						reset();
-						for(const char* c="[reserved]"; *c; c++){
-							*buf++=*c;
-						}
-					} break;
-					case ARG_MXP:
-					{
-						uint8_t p=arguments[j++];
-						uint8_t xyz=arguments[j++];
-						xyz=('X'+3)-xyz-!xyz;
-						if(p==2){ append('-'); }
-						append(xyz);
-						if(p==1){ append('+'); }
-					} break;
-					case ARG_YPQ:
-					{
-						uint8_t yz='Z'-arguments[j++];
-						uint8_t q=arguments[j++];
-						append(yz);
-						if(q){
-							append('+');
-							append_decnum(q);
-						}
-					} break;
-				}
-			}
+			break;
 		}
 	}
+	append_arguments();
 }
 
 int main(){
-	int a=sizeof(op_names);
-	int b=sizeof(op_bits);
-	int c=sizeof(type_masks);
-	//printf("Approximate data size:\n");
-	//printf("  op_names: %d\n", a);
-	//printf("   op_bits: %d\n", b);
-	//printf("type_masks: %d\n", c);
-	//printf("==============\n");
-	//printf("     total: %d\n", a+b+c);
+#ifndef F_CPU
 	for(int i=0; i<(1<<16); i++){
-		decode(i, 0); printf("%s\n", buffer);
+		decode(i); printf("%s\n", buffer);
 	}
+
+#else
+	for(int i=0; i<10; i++){
+		decode(i);
+		DDRB=*buf;
+		DDRB=buf[1];
+	}
+#endif
 }
