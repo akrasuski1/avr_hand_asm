@@ -35,10 +35,10 @@
 // xxxx xxxr rrrr xxxx [k16] <r>
 #define OP_R5_Y_P_STR "\x0e"
 // xxxx xxxr rrrr yypp <rp>
-#define OP_K22_STR "\x0f"
-// xxxx xxxk kkkk xxxk [k16] <k>
-#define OP_K4_STR "\x10"
+#define OP_K4_STR "\x0f"
 // xxxx xxxx kkkk xxxx <k>
+#define OP_K22_STR "\x10"
+// xxxx xxxk kkkk xxxk [k16] <k>
 
 #define OP_CONST_CHR 0
 #define OP_D4_R4_CHR 1
@@ -55,10 +55,11 @@
 #define OP_K7_CHR 12
 #define OP_R5_K16_CHR 13
 #define OP_R5_Y_P_CHR 14
-#define OP_K22_CHR 15
-#define OP_K4_CHR 16
+#define OP_K4_CHR 15
+#define OP_K22_CHR 16
 
-#define OP_LAST OP_K4_CHR
+#define OP_FIRST OP_CONST_CHR
+#define OP_LAST OP_K22_CHR
 
 #define U16(a, b, c, d) (0b ## a ## b ## c ## d)
 
@@ -78,8 +79,8 @@ static uint16_t type_masks[]={
 	U16(1111, 1100, 0000, 0111),
 	U16(1111, 1110, 0000, 1111),
 	U16(1111, 1110, 0000, 0000),
-	U16(1111, 1110, 0000, 1110),
 	U16(1111, 1111, 0000, 1111),
+	U16(1111, 1110, 0000, 1110),
 };
 
 // Skipping the following opcodes, as they are overriden by their
@@ -411,336 +412,34 @@ static uint8_t get_bits(uint8_t** ptr, uint8_t* curbit, uint8_t cnt){
 	return ret;
 }
 
-static uint8_t* append_str(uint8_t* str){
-	while( !IS_METADATA(*str)){
-		append(*str++);
-	}
-	return str;
-}
-
-static uint16_t next;
-
-static void append_arguments();
-static void decode(uint16_t op){
-	reset();
+uint8_t all_bits[10000];
+uint8_t* curbit=all_bits;
+int main(){
 	uint8_t* ptr=op_names;
-	uint8_t arguments[16];
-	uint8_t* args=arguments+sizeof(arguments);
-	while(arguments!=args){
-		*--args=ARG_EOF;
-	}
-	*args=ARG_RESERVED;
 	for(uint8_t i=0; i<OP_NAMES_NUM; i++){
 		while( !IS_METADATA(*ptr) ){
 			ptr++;
 		}
 		uint8_t op_type=*ptr++;
-		if( (op & type_masks[op_type]) == op_bits[i] ){
-			// Found match. Let's print the name first.
-			ptr=append_str(ptr);
-			uint8_t dreg=(op>>4)&0x1f;
-			uint8_t reg=(op&0xf)|((op&0x200)>>5);
-
-			switch(op_type){
-				case OP_R5_Y_P_CHR:
-				{
-					uint8_t xyz=(op>>2u)&3u;
-					uint8_t p=(op&3u);
-
-					// This complicated condition is check for validity.
-					if((p!=0u || xyz==3u) && xyz!=1u && p!=3u){
-						// Possible formats:
-						//             p st
-						// st N+, rD | 1 1
-						// st -N, rD | 2 1
-						// st X, rD  | 0 1
-						// ld rD, N+ | 1 0
-						// ld rD, -N | 2 0
-						// ld rD, X  | 0 0
-						if(op&0x0200u){ // st
-							*args++=ARG_MXP;
-							*args++=p;
-							*args++=xyz;
-							*args++=ARG_REG;
-							*args++=dreg;
-						}
-						else{ // ld
-							*args++=ARG_REG;
-							*args++=dreg;
-							*args++=ARG_MXP;
-							*args++=p;
-							*args++=xyz;
-						}
-					}
-				} break;
-				case OP_R5_K16_CHR:
-				{
-					if(op&0x0200){ // sts
-						*args++=ARG_HEXWORD;
-						*args++=next>>8;
-						*args++=next;
-						*args++=ARG_REG;
-						*args++=dreg;
-					}
-					else{ // lds
-						*args++=ARG_REG;
-						*args++=dreg;
-						*args++=ARG_HEXWORD;
-						*args++=next>>8;
-						*args++=next;
-					}
-				} break;
-				case OP_K12_CHR:
-				{
-					uint16_t k=op&0xfff;
-					*args++=ARG_OFFSET;
-					*args++=12;
-					*args++=k>>8;
-					*args++=k;
-				} break;
-				case OP_Q_R5_CHR:
-				{
-					uint8_t q=(op&7)|((op&0x0c00u)>>7)|((op&0x2000u)>>8);
-					char yz=((op>>3)&1);
-
-					if(q){
-						append('d');
-					}
-					if(op&0x0200u){ // st
-						*args++=ARG_YPQ;
-						*args++=yz;
-						*args++=q;
-						*args++=ARG_REG;
-						*args++=dreg;
-					}
-					else{ // ld
-						*args++=ARG_REG;
-						*args++=dreg;
-						*args++=ARG_YPQ;
-						*args++=yz;
-						*args++=q;
-					}
-				} break;
-				case OP_RD_D4_R4_CHR:
-				case OP_D3_R3_CHR:
-				case OP_D4_R4_CHR:
-				{
-					if(op_type==OP_D3_R3_CHR){
-						dreg=(dreg&7)+16;
-						reg = (reg&7)+16;
-					}
-					else if(op_type==OP_D4_R4_CHR){
-						if(op&0x0100u){ // movw
-							dreg=(dreg&0xf)*2;
-							reg = (reg&0xf)*2;
-						}
-						else{ // muls
-							dreg=(dreg&0xf)+16;
-							reg = (reg&0xf)+16;
-						}
-					}
-					*args++=ARG_REG;
-					*args++=dreg;
-					*args++=ARG_REG;
-					*args++=reg;
-				} break;
-				case OP_K6_R2_CHR:
-				{
-					*args++=ARG_REG;
-					*args++=(dreg&3)*2+24;
-					*args++=ARG_HEXBYTE;
-					*args++=(op&0xf)|((op>>2)&0x30);
-				} break;
-				case OP_K8_R4_CHR:
-				{
-					*args++=ARG_REG;
-					*args++=(dreg&0xf)+16;
-					*args++=ARG_HEXBYTE;
-					*args++=(op&0xf)|((op>>4)&0xf0);
-				} break;
-				case OP_R5_CHR:
-				{
-					*args++=ARG_REG;
-					*args++=dreg;
-					if((op&0xfe0cu)==0x9004){ // lpm/elpm Z(+)
-						*args++=ARG_MXP;
-						*args++=op&1;
-						*args++=0;
-					}
-				} break;
-				case OP_R5_B_CHR:
-				{
-					*args++=ARG_REG;
-					*args++=dreg;
-					*args++=ARG_DECBYTE;
-					*args++=op&7;
-				} break;
-				case OP_K7_CHR:
-				{
-					*args++=ARG_OFFSET;
-					*args++=7;
-					*args++=0;
-					*args++=(op>>3)&0x7f;
-				} break;
-				case OP_K22_CHR:
-				{
-					*args++=ARG_HEX3B;
-					*args++=(op&1)|((op>>3)&0x3e);
-				} break;
-				case OP_IO_B_CHR:
-				{
-					*args++=ARG_HEXBYTE;
-					*args++=(op>>3)&0x1f;
-					*args++=ARG_DECBYTE;
-					*args++=op&7;
-				} break;
-				case OP_IO_R5_CHR:
-				{
-					uint8_t a=(op&0xf)|((op>>5)&0x30);
-					if(op&0x0800){ // out
-						*args++=ARG_HEXBYTE;
-						*args++=a;
-						*args++=ARG_REG;
-						*args++=dreg;
-					}
-					else{ // in
-						*args++=ARG_REG;
-						*args++=dreg;
-						*args++=ARG_HEXBYTE;
-						*args++=a;
-					}
-				} break;
-				case OP_CONST_CHR:
-				{
-					*args++=ARG_EOF;
-				} break;
-				case OP_K4_CHR:
-				{
-					*args++=ARG_DECBYTE;
-					*args++=(op>>4)&0xfu;
-				} break;
-			}
-			break;
-		}
-	}
-	append_arguments(arguments);
-}
-
-static void append_arguments(uint8_t* arguments){
-	uint8_t* args=arguments;
-	while(1){
-		uint8_t byte=*args++;
-		if(byte==0){ return; }
-		if(args!=arguments+1){
-			append(',');
-		}
-		append(' ');
-		switch(byte){
-			case ARG_HEXBYTE:
-			case ARG_HEXWORD:
-			{
-				append_str((uint8_t*)"0x");
-				uint8_t bytes=byte-(ARG_HEXBYTE-1);
-				while(bytes--){
-					uint8_t num=*args++;
-					append_hexnibble(num>>4);
-					append_hexnibble(num);
-				}
-			} break;
-			case ARG_HEX3B:
-			{
-				static uint8_t bytes[3];
-				bytes[0]=((*args++)<<1)|(next>>15);
-				bytes[1]=(next&0x07f80u)>>7;
-				bytes[2]=(next&0x7f)<<1;
-				append('0');
-				if(bytes[0] || bytes[1] || bytes[2]){
-					append('x');
-					uint8_t any=0;
-					for(uint8_t nib=0; nib<6; nib++){
-						uint8_t x=bytes[nib/2];
-						if((nib&1) == 0){ x>>=4; }
-						any|=x;
-						if(any){
-							append_hexnibble(x);
-						}
-					}
-				}
-			} break;
-			case ARG_REG:
-				append('r');
-			case ARG_DECBYTE: // Fallthrough.
-				append_decnum(*args++);
-				break;
-			case ARG_OFFSET:
-			{
-				append('.');
-				uint8_t bits=*args++;
-				uint16_t k=*args++;
-				k=(k<<8)|*args++;
-				if(k&(1u<<(bits-1))){
-					append('-');
-					k=(1u<<bits)-k;
-				}
-				else{
-					append('+');
-				}
-				append_decnum(k*2);
-			} break;
-			case ARG_RESERVED:
-			{
-				reset();
-				for(const char* c="[reserved]"; *c; c++){
-					append(*c);
-				}
-			} break;
-			case ARG_MXP:
-			{
-				uint8_t p=*args++;
-				uint8_t xyz=*args++;
-				xyz=('X'+3)-xyz-!xyz;
-				if(p==2){ append('-'); }
-				append(xyz);
-				if(p==1){ append('+'); }
-			} break;
-			case ARG_YPQ:
-			{
-				uint8_t yz='Z'-*args++;
-				uint8_t q=*args++;
-				append(yz);
-				if(q){
-					append('+');
-					append_decnum(q);
-				}
-			} break;
-		}
-	}
-}
-
-int main(){
-#ifndef F_CPU
-	for(int i=0; i<(1<<16); i++){
-		decode(i); 
-		for(char* b=buffer; *b; b++){
-			if(*b==SHORT_SPACE_Z_PLUS_CHR){
-				printf(" Z+");
-			}
-			else if(*b==SHORT_SPACE_Z_COMMA_CHR){
-				printf(" Z,");
-			}
-			else{
-				printf("%c", *b);
+		uint16_t mask=type_masks[op_type];
+		uint16_t opcode=op_bits[i];
+		for(int b=0; b<16; b++){
+			if((1<<b) & mask){
+				*curbit++=!!( (1<<b) & opcode );
 			}
 		}
-		printf("\n");
 	}
-
-#else
-	for(int i=0; i<10; i++){
-		next=i;
-		decode(i);
-		DDRB=*buf;
-		DDRB=buf[1];
+	printf("%zu bits\n", curbit-all_bits);
+	printf("uint8_t compressed_op_bits[]=\n\t\"");
+	for(int i=0; i<(curbit-all_bits); i+=8){
+		if(i && i%128==0){
+			printf("\"\n\t\"");
+		}
+		uint8_t a=0;
+		for(int j=0; j<8; j++){
+			a|=all_bits[i+j]<<j;
+		}
+		printf("\\x%02x", a);
 	}
-#endif
+	printf("\";\n");
 }
