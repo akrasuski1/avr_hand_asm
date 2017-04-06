@@ -39,8 +39,6 @@
 // xxxx xxxx kkkk xxxx <k>
 #define OP_K22 "Q"
 // xxxx xxxk kkkk xxxk [k16] <k>
-#define OP_ANY "R"
-// what ever what ever <>
 
 #define OP_CONST_CHR 'A'
 #define OP_D4_R4_CHR 'B'
@@ -59,7 +57,6 @@
 #define OP_R5_Y_P_CHR 'O'
 #define OP_K4_CHR 'P'
 #define OP_K22_CHR 'Q'
-#define OP_ANY_CHR 'R'
 
 #define U16(a, b, c, d) (0b ## a ## b ## c ## d)
 
@@ -81,7 +78,6 @@ static uint16_t type_masks[]={
 	U16(1111, 1110, 0000, 0000),
 	U16(1111, 1111, 0000, 1111),
 	U16(1111, 1110, 0000, 1110),
-	U16(0000, 0000, 0000, 0000),
 };
 
 // Skipping the following opcodes, as they are overriden by their
@@ -206,8 +202,7 @@ static char op_names[]=
 	OP_R5_Y_P   "ld"
 	OP_R5_Y_P   "st"
 
-	OP_ANY "[reserved]"
-	OP_ANY // Sort of null terminator.
+	OP_CONST // Sort of null terminator.
 ;
 
 static uint16_t op_bits[]={
@@ -323,11 +318,9 @@ static uint16_t op_bits[]={
 	U16(1000, 0010, 0000, 0000), // st
 	U16(1001, 0000, 0000, 0000), // ld
 	U16(1001, 0010, 0000, 0000), // st
-
-	U16(0000, 0000, 0000, 0000), // [reserved]
 };
 
-#define IS_METADATA(c) ((c)>='A' && (c)<=OP_ANY_CHR)
+#define IS_METADATA(c) ((c)>='A' && (c)<=OP_K22_CHR)
 
 #define ARG_EOF 0
 #define ARG_REG 1
@@ -340,7 +333,7 @@ static uint16_t op_bits[]={
 #define ARG_MXP 8
 #define ARG_YPQ 9
 
-static char buffer[64];
+static char buffer[20];
 static char* buf;
 
 static void reset(){
@@ -354,9 +347,10 @@ static void append(char c){
 	*buf++=c;
 }
 
-static uint16_t divu10(uint16_t n){
+static uint16_t div10(int16_t n){
 	for(uint16_t i=0; ; i++){
-		if(i*10u>n){ return i-1u; }
+		n-=10;
+		if(n<0){ return i; }
 	}
 }
 
@@ -365,7 +359,7 @@ static void append_decnum(uint16_t num){
 	static uint8_t digs[4];
 	uint8_t* dig=digs;
 	while(num){
-		uint16_t divided=divu10(num);
+		uint16_t divided=div10(num);
 		*dig++=num-divided*10u;
 		num=divided;
 	}
@@ -394,7 +388,12 @@ static void append_arguments();
 static void decode(uint16_t op){
 	reset();
 	char* ptr=op_names;
-	for(uint8_t i=0; ; i++){
+	uint8_t* args=arguments+sizeof(arguments);
+	while(arguments!=args){
+		*args--=ARG_EOF;
+	}
+	*args=ARG_RESERVED;
+	for(uint8_t i=0; i<sizeof(op_bits)/sizeof(*op_bits); i++){
 		while( !IS_METADATA(*ptr) ){
 			ptr++;
 		}
@@ -405,11 +404,6 @@ static void decode(uint16_t op){
 				append(*ptr);
 				ptr++;
 			}
-			uint8_t* args=arguments+sizeof(arguments);
-			while(arguments!=args){
-				*args--=ARG_EOF;
-			}
-			*args=ARG_RESERVED;
 			uint8_t dreg=(op>>4)&0x1f;
 			uint8_t reg=(op&0xf)|((op&0x200)>>5);
 
@@ -588,15 +582,14 @@ static void decode(uint16_t op){
 					}
 				} break;
 				case OP_CONST_CHR-'A':
-				case OP_ANY_CHR-'A':
 				{
 					*args++=ARG_EOF;
 				} break;
 			}
-			append_arguments();
 			break;
 		}
 	}
+	append_arguments();
 }
 
 static void append_arguments(){
