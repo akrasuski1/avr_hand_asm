@@ -8,9 +8,6 @@
 #include "common.h"
 #include "compressed.h"
 									
-
-#define IS_METADATA(c) ((c)<=OP_LAST)
-
 #define ARG_EOF 0
 #define ARG_REG 1
 #define ARG_HEXBYTE 2
@@ -26,10 +23,7 @@ static char buffer[20];
 static char* buf;
 
 static void reset(){
-	buf=buffer+sizeof(buffer);
-	while(buf != buffer){
-		*--buf=0;
-	}
+	buf=buffer;
 }
 
 static void append(char c){
@@ -79,57 +73,68 @@ static uint8_t get_bit(uint8_t** ptr, uint8_t* curbit){
 	return !!ret;
 }
 
-static uint8_t get_bits(uint8_t** ptr, uint8_t* curbit, uint8_t cnt){
+uint8_t* compressed_op_names_ptr;
+uint8_t compressed_op_names_bit;
+
+static uint8_t get_bits(uint8_t cnt){
 	uint8_t ret=0;
-	for(uint8_t i=0; i<cnt; i++){
-		ret|=1u<<get_bit(ptr, curbit);
+	while(cnt--){
+		ret*=2;
+		ret|=get_bit(&compressed_op_names_ptr, &compressed_op_names_bit);
 	}
 	return ret;
 }
 
-static uint8_t* append_str(uint8_t* str){
-	while( !IS_METADATA(*str)){
+static void append_str(uint8_t* str){
+	while(*str){
 		append(*str++);
 	}
-	return str;
 }
 
 static uint16_t next;
 
-static void append_arguments();
+static void append_arguments(uint8_t* arguments);
+
 static void decode(uint16_t op){
 	reset();
-	uint8_t* ptr=op_names;
 	uint8_t arguments[16];
 	uint8_t* args=arguments+sizeof(arguments);
 
 	uint8_t* compressed_op_bits_ptr=compressed_op_bits;
-	uint8_t compressed_op=0;
+	uint8_t compressed_op_bit=0;
+
+	compressed_op_names_ptr=compressed_name_bits;
+	compressed_op_names_bit=0;
 
 	while(arguments!=args){
 		*--args=ARG_EOF;
 	}
 	*args=ARG_RESERVED;
-	for(uint8_t i=0; i<OP_NAMES_NUM; i++){
-		while( !IS_METADATA(*ptr) ){
-			ptr++;
+	while(1){
+		uint8_t len=get_bits(3);
+		if(len==MAGIC_LEN_EOF){ break; }
+		uint8_t op_type=get_bits(4);
+		if(len==MAGIC_LEN_K4){
+			len=3;
+			op_type=OP_K4_CHR;
 		}
-		uint8_t op_type=*ptr++;
 		uint8_t ok=1;
 		uint16_t mask=type_masks[op_type];
 		for(uint8_t bit=0; bit<16; bit++){
 			if(mask&(1u<<bit)){
 				uint8_t this_bit=!!((1u<<bit) & op);
-				if(this_bit != get_bit(&compressed_op_bits_ptr, &compressed_op)){
+				if(this_bit != get_bit(&compressed_op_bits_ptr, &compressed_op_bit)){
 					ok=0;
 				}
 			}
 		}
 		if(ok){
 			// Found match. Let's print the name first.
-			ptr=append_str(ptr);
+			while(len--){
+				append(get_bits(5) | 0x60u);
+			}
 			uint8_t dreg=(op>>4)&0x1f;
-			uint8_t reg=(op&0xf)|((op&0x200)>>5);
+			uint8_t reg=(op&0xf)|((op&0x0200u)>>5);
 
 			switch(op_type){
 				case OP_R5_Y_P_CHR:
@@ -252,7 +257,7 @@ static void decode(uint16_t op){
 				{
 					*args++=ARG_REG;
 					*args++=dreg;
-					if((op&0xfe0cu)==0x9004){ // lpm/elpm Z(+)
+					if((op&0xfe0cu)==0x9004u){ // lpm/elpm Z(+)
 						*args++=ARG_MXP;
 						*args++=op&1;
 						*args++=0;
@@ -287,7 +292,7 @@ static void decode(uint16_t op){
 				case OP_IO_R5_CHR:
 				{
 					uint8_t a=(op&0xf)|((op>>5)&0x30);
-					if(op&0x0800){ // out
+					if(op&0x0800u){ // out
 						*args++=ARG_HEXBYTE;
 						*args++=a;
 						*args++=ARG_REG;
@@ -311,6 +316,10 @@ static void decode(uint16_t op){
 				} break;
 			}
 			break;
+		}
+		while(len--){
+			// Skip name.
+			get_bits(5);
 		}
 	}
 	append_arguments(arguments);
@@ -411,7 +420,7 @@ int main(){
 #ifndef F_CPU
 	for(int i=0; i<(1<<16); i++){
 		decode(i); 
-		for(char* b=buffer; *b; b++){
+		for(char* b=buffer; b!=buf; b++){
 			if(*b==SHORT_SPACE_Z_PLUS_CHR){
 				printf(" Z+");
 			}
