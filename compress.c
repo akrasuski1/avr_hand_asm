@@ -46,6 +46,7 @@ int main(){
 		for(int b=0; b<16; b++){
 			if((1<<b) & mask){
 				*curbit++=!!( (1<<b) & opcode );
+				printf("// Bit: %d\n", curbit[-1]);
 			}
 		}
 		uint8_t len=0;
@@ -54,48 +55,32 @@ int main(){
 		}
 		curop[len]=0;
 
-		uint8_t real_len=len;
+		uint8_t skip=0;
+		while(1){
+			if(curop[skip] && curop[skip]==prevop[skip] && skip<3){
+				skip++;
+			}
+			else{
+				break;
+			}
+		}
+		uint8_t sent_len=len-skip;
 		// This is op_type 16, not enough place in 4 bits.
 		if(op_type==OP_K4_CHR){ 
-			len=MAGIC_LEN_K4; 
+			sent_len=MAGIC_LEN_K4; 
 			op_type=0; 
 			// Length is implied 3, for "des"
 		}
-		uint8_t compress=1;
-		uint8_t special=0;
-		if(!strcmp("des", (char*)curop)){
-		   	compress=1; 
-			special=1;
-		}
-		for(int j=0; j<real_len; ){
-			if(compress && curop[j] && curop[j+1] && curop[j]==prevop[j] && curop[j+1]==prevop[j+1]){
-				j+=3;
-				if(!special){
-					len--;
-				}
-			}
-			else{
-				j++;
-			}
-		}
-		store(&namebit, len, 3);
+		printf("// %s - skip %d\n", curop, skip);
+		store(&namebit, skip, 2);
+		store(&namebit, sent_len, 3);
 		store(&namebit, op_type, 4);
-		for(uint8_t j=0; j<real_len; ){
-			if(compress && curop[j] && curop[j+1] && curop[j]==prevop[j] && curop[j+1]==prevop[j+1]){
-				uint8_t c=curop[j+2]-0x60;
-				store(&namebit, 28u|(c>>3), 5);
-				if(curop[j+2]){
-					store(&namebit, c&7, 3);
-				}
-				j+=3;
-			}
-			else{
-				store(&namebit, curop[j]-0x60, 5);
-				j++;
-			}
+		for(uint8_t j=skip; j<len; ){
+			store(&namebit, curop[j]-0x60, 5);
+			j++;
 		}
 
-		for(uint8_t j=0; j<=real_len; j++){
+		for(uint8_t j=0; j<=len; j++){
 			prevop[j]=curop[j];
 		}
 	}

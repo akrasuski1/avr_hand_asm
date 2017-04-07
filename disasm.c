@@ -30,8 +30,8 @@ static void append(uint8_t c){
 	*buf++=c;
 }
 
-static void skip_two(){
-	buf+=2;
+static void skip(uint8_t many){
+	buf+=many;
 }
 
 static uint16_t div10(int16_t n){
@@ -115,45 +115,37 @@ static void decode(uint16_t op){
 	*args=ARG_RESERVED;
 	while(1){
 		reset();
+		uint8_t skipped=get_bits(2);
+		skip(skipped);
 		uint8_t len=get_bits(3);
-		if(len==MAGIC_LEN_EOF){ break; }
+		if(len+skipped==MAGIC_LEN_EOF){ break; }
 		uint8_t op_type=get_bits(4);
 		if(len==MAGIC_LEN_K4){
-			len=2; // "des": compressed two bytes and one normal.
+			len=1; // "des": compressed two bytes, one left.
 			op_type=OP_K4_CHR;
 		}
-		uint8_t c=0;
-		uint8_t bits=5;
 		while(len--){
-			c|=get_bits(bits);
-			if(c<0x1cu){
-				append(c | 0x60u);
-				c=0;
-				bits=5;
-			}
-			else{
-				c&=3;
-				c<<=3;
-				skip_two();
-				bits=3;
-			}
+			append(get_bits(5)|0x60);
 		}
-		/*printf("Debug current op: ");
-		for(uint8_t* cc=buffer; cc<buf; cc++){
-			printf("%c", *cc);
-		}
-		printf("\n");*/
 		uint8_t fail=0;
 		uint16_t mask=type_masks[op_type];
 		uint16_t op_tmp=op;
 		for(uint8_t bit=0; bit<16; bit++){
 			if(mask&1u){
 				uint8_t this_bit=op_tmp&1;
-				fail |= this_bit ^ get_bit(&compressed_op_bits_ptr, &compressed_op_bit);
+				uint8_t needed_bit=get_bit(&compressed_op_bits_ptr, &compressed_op_bit);
+				fail |= this_bit ^ needed_bit;
 			}
 			mask>>=1;
 			op_tmp>>=1;
 		}
+		/*
+		printf("// ");
+		for(uint8_t* cc=buffer; cc<buf; cc++){
+			printf("%c", *cc);
+		}
+		printf(" - skip %d mask %04x\n", skipped, type_masks[op_type]);
+		*/
 		if(!fail){
 			// Found match. Let's print the name first.
 			uint8_t dreg=(op>>4)&0x1f;
