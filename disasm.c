@@ -65,16 +65,16 @@ static void append_hexnibble(uint8_t num){
 }
 
 static uint8_t get_bit(uint8_t** ptr, uint8_t* curbit){
-	uint8_t ret=(**ptr)&(1<<*curbit);
+	uint8_t ret=((**ptr)>>(*curbit))&1;
 	*curbit=(*curbit+1)&7;
 	if(*curbit==0){
 		(*ptr)++;
 	}
-	return !!ret;
+	return ret;
 }
 
-uint8_t* compressed_op_names_ptr;
-uint8_t compressed_op_names_bit;
+static uint8_t* compressed_op_names_ptr;
+static uint8_t compressed_op_names_bit;
 
 static uint8_t get_bits(uint8_t cnt){
 	uint8_t ret=0;
@@ -96,7 +96,6 @@ static uint16_t next;
 static void append_arguments(uint8_t* arguments);
 
 static void decode(uint16_t op){
-	reset();
 	uint8_t arguments[16];
 	uint8_t* args=arguments+sizeof(arguments);
 
@@ -111,6 +110,7 @@ static void decode(uint16_t op){
 	}
 	*args=ARG_RESERVED;
 	while(1){
+		reset();
 		uint8_t len=get_bits(3);
 		if(len==MAGIC_LEN_EOF){ break; }
 		uint8_t op_type=get_bits(4);
@@ -118,21 +118,22 @@ static void decode(uint16_t op){
 			len=3;
 			op_type=OP_K4_CHR;
 		}
-		uint8_t ok=1;
-		uint16_t mask=type_masks[op_type];
-		for(uint8_t bit=0; bit<16; bit++){
-			if(mask&(1u<<bit)){
-				uint8_t this_bit=!!((1u<<bit) & op);
-				if(this_bit != get_bit(&compressed_op_bits_ptr, &compressed_op_bit)){
-					ok=0;
-				}
-			}
+		while(len--){
+			append(get_bits(5) | 0x60u);
 		}
-		if(ok){
-			// Found match. Let's print the name first.
-			while(len--){
-				append(get_bits(5) | 0x60u);
+		uint8_t fail=0;
+		uint16_t mask=type_masks[op_type];
+		uint16_t op_tmp=op;
+		for(uint8_t bit=0; bit<16; bit++){
+			if(mask&1u){
+				uint8_t this_bit=op_tmp&1;
+				fail |= this_bit ^ get_bit(&compressed_op_bits_ptr, &compressed_op_bit);
 			}
+			mask>>=1;
+			op_tmp>>=1;
+		}
+		if(!fail){
+			// Found match. Let's print the name first.
 			uint8_t dreg=(op>>4)&0x1f;
 			uint8_t reg=(op&0xf)|((op&0x0200u)>>5);
 
@@ -316,10 +317,6 @@ static void decode(uint16_t op){
 				} break;
 			}
 			break;
-		}
-		while(len--){
-			// Skip name.
-			get_bits(5);
 		}
 	}
 	append_arguments(arguments);
