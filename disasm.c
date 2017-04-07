@@ -132,9 +132,8 @@ static void decode(uint16_t op){
 		uint16_t op_tmp=op;
 		for(uint8_t bit=0; bit<16; bit++){
 			if(mask&1u){
-				uint8_t this_bit=op_tmp&1;
-				uint8_t needed_bit=get_bit(&compressed_op_bits_ptr, &compressed_op_bit);
-				fail |= this_bit ^ needed_bit;
+				fail |= ( (op_tmp&1) ^ 
+						get_bit(&compressed_op_bits_ptr, &compressed_op_bit));
 			}
 			mask>>=1;
 			op_tmp>>=1;

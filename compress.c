@@ -46,7 +46,6 @@ int main(){
 		for(int b=0; b<16; b++){
 			if((1<<b) & mask){
 				*curbit++=!!( (1<<b) & opcode );
-				printf("// Bit: %d\n", curbit[-1]);
 			}
 		}
 		uint8_t len=0;
@@ -71,7 +70,7 @@ int main(){
 			op_type=0; 
 			// Length is implied 3, for "des"
 		}
-		printf("// %s - skip %d\n", curop, skip);
+		printf("// %s - skip %d, remain: %d\n", curop, skip, sent_len);
 		store(&namebit, skip, 2);
 		store(&namebit, sent_len, 3);
 		store(&namebit, op_type, 4);
