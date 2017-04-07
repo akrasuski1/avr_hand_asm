@@ -19,15 +19,19 @@
 #define ARG_MXP 8
 #define ARG_YPQ 9
 
-static char buffer[20];
-static char* buf;
+static uint8_t buffer[20];
+static uint8_t* buf;
 
 static void reset(){
 	buf=buffer;
 }
 
-static void append(char c){
+static void append(uint8_t c){
 	*buf++=c;
+}
+
+static void skip_two(){
+	buf+=2;
 }
 
 static uint16_t div10(int16_t n){
@@ -115,12 +119,30 @@ static void decode(uint16_t op){
 		if(len==MAGIC_LEN_EOF){ break; }
 		uint8_t op_type=get_bits(4);
 		if(len==MAGIC_LEN_K4){
-			len=3;
+			len=2; // "des": compressed two bytes and one normal.
 			op_type=OP_K4_CHR;
 		}
+		uint8_t c=0;
+		uint8_t bits=5;
 		while(len--){
-			append(get_bits(5) | 0x60u);
+			c|=get_bits(bits);
+			if(c<0x1cu){
+				append(c | 0x60u);
+				c=0;
+				bits=5;
+			}
+			else{
+				c&=3;
+				c<<=3;
+				skip_two();
+				bits=3;
+			}
 		}
+		/*printf("Debug current op: ");
+		for(uint8_t* cc=buffer; cc<buf; cc++){
+			printf("%c", *cc);
+		}
+		printf("\n");*/
 		uint8_t fail=0;
 		uint16_t mask=type_masks[op_type];
 		uint16_t op_tmp=op;
@@ -417,7 +439,7 @@ int main(){
 #ifndef F_CPU
 	for(int i=0; i<(1<<16); i++){
 		decode(i); 
-		for(char* b=buffer; b!=buf; b++){
+		for(uint8_t* b=buffer; b!=buf; b++){
 			if(*b==SHORT_SPACE_Z_PLUS_CHR){
 				printf(" Z+");
 			}

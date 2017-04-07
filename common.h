@@ -37,7 +37,7 @@
 #define OP_LAST OP_K4_CHR
 
 #define MAGIC_LEN_EOF 0
-#define MAGIC_LEN_K4 1
+#define MAGIC_LEN_K4 7
 
 #define U16(a, b, c, d) (0b ## a ## b ## c ## d)
 

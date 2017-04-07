@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <stdint.h>
 
 #include "common.h"
@@ -35,6 +36,7 @@ int main(){
 	uint8_t* namebit=name_bits;
 
 	uint8_t curop[100];
+	uint8_t prevop[100]={};
 
 	uint8_t* ptr=op_names;
 	for(uint8_t i=0; i<OP_NAMES_NUM; i++){
@@ -50,6 +52,7 @@ int main(){
 		while( !IS_METADATA(*ptr) ){
 			curop[len++]=*ptr++;
 		}
+		curop[len]=0;
 
 		uint8_t real_len=len;
 		// This is op_type 16, not enough place in 4 bits.
@@ -58,10 +61,42 @@ int main(){
 			op_type=0; 
 			// Length is implied 3, for "des"
 		}
+		uint8_t compress=1;
+		uint8_t special=0;
+		if(!strcmp("des", (char*)curop)){
+		   	compress=1; 
+			special=1;
+		}
+		for(int j=0; j<real_len; ){
+			if(compress && curop[j] && curop[j+1] && curop[j]==prevop[j] && curop[j+1]==prevop[j+1]){
+				j+=3;
+				if(!special){
+					len--;
+				}
+			}
+			else{
+				j++;
+			}
+		}
 		store(&namebit, len, 3);
 		store(&namebit, op_type, 4);
-		for(uint8_t j=0; j<real_len; j++){
-			store(&namebit, curop[j]-0x60, 5);
+		for(uint8_t j=0; j<real_len; ){
+			if(compress && curop[j] && curop[j+1] && curop[j]==prevop[j] && curop[j+1]==prevop[j+1]){
+				uint8_t c=curop[j+2]-0x60;
+				store(&namebit, 28u|(c>>3), 5);
+				if(curop[j+2]){
+					store(&namebit, c&7, 3);
+				}
+				j+=3;
+			}
+			else{
+				store(&namebit, curop[j]-0x60, 5);
+				j++;
+			}
+		}
+
+		for(uint8_t j=0; j<=real_len; j++){
+			prevop[j]=curop[j];
 		}
 	}
 	printf("// %zu bits\n", curbit-all_bits);

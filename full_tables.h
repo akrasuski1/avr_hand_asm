@@ -26,7 +26,8 @@
 // lds/sts (16-bit) - it seems to overlap with ldd rD, Z+q
 // clr (eor rx, rx is clear enough)
 //
-// Also, we mostly use alphabetical order. We make an exception for
+// Also, we mostly use alphabetical order - both because of aesthetics,
+// but also to compress better. We make an exception for
 // ld/ldd and st/std opcodes due to their complexity.
 #define OP_NAMES_NUM 111
 
@@ -140,8 +141,8 @@ static uint16_t op_bits[]={
 	U16(1001, 0010, 0000, 0100), // xch
 
 	U16(1000, 0000, 0000, 0000), // ld
-	U16(1000, 0010, 0000, 0000), // st
 	U16(1001, 0000, 0000, 0000), // ld
+	U16(1000, 0010, 0000, 0000), // st
 	U16(1001, 0010, 0000, 0000), // st
 };
 
@@ -255,8 +256,8 @@ static uint8_t op_names[]=
 	OP_R5_STR "xch" SHORT_SPACE_Z_COMMA_STR
 
 	OP_Q_R5_STR "ld"
-	OP_Q_R5_STR "st"
 	OP_R5_Y_P_STR "ld"
+	OP_Q_R5_STR "st"
 	OP_R5_Y_P_STR "st"
 ;
 
