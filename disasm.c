@@ -84,12 +84,6 @@ static uint8_t get_bits(uint8_t cnt){
 	return ret;
 }
 
-static void append_str(uint8_t* str){
-	while(*str){
-		append(*str++);
-	}
-}
-
 static void append_arguments(uint8_t* arguments, uint16_t next);
 
 static void decode(uint16_t op, uint16_t next){
@@ -336,7 +330,8 @@ static void append_arguments(uint8_t* arguments, uint16_t next){
 			case ARG_HEXBYTE:
 			case ARG_HEXWORD:
 			{
-				append_str((uint8_t*)"0x");
+				append('0');
+				append('x');
 				uint8_t bytes=byte-(ARG_HEXBYTE-1);
 				while(bytes--){
 					uint8_t num=*args++;
