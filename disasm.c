@@ -435,7 +435,7 @@ int main(){
 	}
 
 #else
-	for(int i=0; i<10; i++){
+	for(uint16_t i=0; ; i++){
 		next=i;
 		decode(i);
 		DDRB=*buf;

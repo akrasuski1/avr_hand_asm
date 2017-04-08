@@ -84,11 +84,11 @@ int main(){
 		}
 	}
 	printf("// %zu bits\n", curbit-all_bits);
-	printf("uint8_t compressed_op_bits[]=\n\t\"");
+	printf("static uint8_t compressed_op_bits[]=\n\t\"");
 	print_all(all_bits, curbit);
 
 	printf("\n");
 	printf("// %zu bits\n", namebit-name_bits);
-	printf("uint8_t compressed_name_bits[]=\n\t\"");
+	printf("static uint8_t compressed_name_bits[]=\n\t\"");
 	print_all(name_bits, namebit);
 }
