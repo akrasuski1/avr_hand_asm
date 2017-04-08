@@ -90,11 +90,9 @@ static void append_str(uint8_t* str){
 	}
 }
 
-static uint16_t next;
+static void append_arguments(uint8_t* arguments, uint16_t next);
 
-static void append_arguments(uint8_t* arguments);
-
-static void decode(uint16_t op){
+static void decode(uint16_t op, uint16_t next){
 	uint8_t arguments[16];
 	uint8_t* args=arguments+sizeof(arguments);
 
@@ -322,10 +320,10 @@ static void decode(uint16_t op){
 			break;
 		}
 	}
-	append_arguments(arguments);
+	append_arguments(arguments, next);
 }
 
-static void append_arguments(uint8_t* arguments){
+static void append_arguments(uint8_t* arguments, uint16_t next){
 	uint8_t* args=arguments;
 	while(1){
 		uint8_t byte=*args++;
@@ -419,7 +417,7 @@ static void append_arguments(uint8_t* arguments){
 int main(){
 #ifndef F_CPU
 	for(int i=0; i<(1<<16); i++){
-		decode(i); 
+		decode(i, 0); 
 		for(uint8_t* b=buffer; b!=buf; b++){
 			if(*b==SHORT_SPACE_Z_PLUS_CHR){
 				printf(" Z+");
@@ -433,11 +431,11 @@ int main(){
 		}
 		printf("\n");
 	}
-
 #else
+	uint16_t ctr=12345;
 	for(uint16_t i=0; ; i++){
-		next=i;
-		decode(i);
+		ctr*=3;
+		decode(i, i|ctr);
 		DDRB=*buf;
 		DDRB=buf[1];
 	}
