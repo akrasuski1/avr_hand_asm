@@ -34,25 +34,20 @@ static void skip(uint8_t many){
 	buf+=many;
 }
 
-static uint16_t div10(int16_t n){
-	for(uint16_t i=0; ; i++){
-		n-=10;
-		if(n<0){ return i; }
-	}
-}
-
 // Up to 9999.
 static void append_decnum(uint16_t num){
 	static uint8_t digs[4];
 	uint8_t* dig=digs;
-	while(num){
-		uint16_t divided=div10(num);
-		*dig++=num-divided*10u;
-		num=divided;
-	}
-	if(dig==digs){
-		append('0');
-	}
+	do{
+		int16_t remainder=num;
+		num=0;
+		while(1){
+			remainder-=10;
+			if(remainder<0){ break; }
+			num++;
+		}
+		*dig++=remainder+10;
+	} while(num);
 	while(dig--!=digs){
 		append(*dig +'0');
 	}
