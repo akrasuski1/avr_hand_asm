@@ -348,7 +348,7 @@ static void append_arguments(uint8_t* arguments){
 			} break;
 			case ARG_HEX3B:
 			{
-				static uint8_t bytes[3];
+				uint8_t bytes[3];
 				bytes[0]=((*args++)<<1)|(next>>15);
 				bytes[1]=(next&0x07f80u)>>7;
 				bytes[2]=(next&0x7f)<<1;
