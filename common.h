@@ -36,8 +36,22 @@
 #define OP_FIRST OP_CONST_CHR
 #define OP_LAST OP_K4_CHR
 
-#define MAGIC_LEN_EOF 0
-#define MAGIC_LEN_K4 7
+#define MAGIC_LEN_EOF 10
+#define MAGIC_LEN_K4 9
+#define MAGIC_LEN_7B_NULL_TERMINATED 8
+#define MAGIC_LEN_NULL_TERMINATED 7
+
+#define SHORT_SPACE_Z_COMMA_CHR '{' 
+#define SHORT_SPACE_Z_PLUS_CHR  '|' 
+#define SHORT_SPACE             '}' 
+
+#define SHORT_SPACE_Z_COMMA_STR "{"
+#define SHORT_SPACE_Z_PLUS_STR  "|"
+#define SHORT_SPACE_STR         "}"
+
+static const char* short_strings[]={
+	" Z,", " Z+", " "
+};
 
 #define U16(a, b, c, d) (0b ## a ## b ## c ## d)
 
@@ -45,12 +59,6 @@
 #define CATEGORY_LOAD_STORE 1
 #define CATEGORY_CONTROL_FLOW 2
 #define CATEGORY_MISC 3
-
-static const char* category_names=
-	"ARITHMETIC\x00"
-	"LOADSTORE\x00"
-	"CONTROL\x00"
-	"MISC";
 
 static uint16_t type_masks[]={
 	U16(1111, 1111, 1111, 1111),
@@ -72,5 +80,40 @@ static uint16_t type_masks[]={
 	U16(1111, 1111, 0000, 1111),
 };
 
-#define SHORT_SPACE_Z_COMMA_CHR '{' 
-#define SHORT_SPACE_Z_PLUS_CHR  '|' 
+enum {
+	STRING_EMPTY,
+	STRING_ARE_YOU_SURE,
+	STRING_ARITH,
+	STRING_CARD,
+	STRING_CONFIG,
+	STRING_CONTINUE,
+	STRING_SPLASH,
+	STRING_DEVICE,
+	STRING_EDIT,
+	STRING_EEPROM,
+	STRING_FLASH,
+	STRING_FLOW,
+	STRING_LOAD,
+	STRING_LOCAL,
+	STRING_LOCATION,
+	STRING_MAIN_MENU,
+	STRING_MEM,
+	STRING_MISC,
+	STRING_MOVE,
+	STRING_NO,
+	STRING_OPERATION,
+	STRING_OTHER,
+	STRING_PAGE_SIZE,
+	STRING_READ_OFF,
+	STRING_REMOTE,
+	STRING_RUN,
+	STRING_SD,
+	STRING_STORE,
+	STRING_TYPE,
+	STRING_WRITE_OFF,
+	STRING_YES,
+
+	STRING_M32,
+	STRING_M8,
+	STRING_T13
+};

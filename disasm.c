@@ -3,6 +3,9 @@
 #else
 	#include <stdio.h>
 	#include <stdint.h>
+	#include <unistd.h>
+	#include <poll.h>
+	#include <sys/time.h>
 #endif
 
 #include "common.h"
@@ -88,19 +91,35 @@ static uint8_t get_bits(uint8_t cnt, bit_state* bs){
 
 static void append_arguments(uint8_t* arguments, uint16_t next);
 
-static uint8_t next_opcode(uint8_t* op_type, bit_state* bs){
+static uint8_t next_string(uint8_t* op_type, bit_state* bs){
 	reset();
 	uint8_t skipped=get_bits(2, bs);
 	skip(skipped);
 	uint8_t len=get_bits(3, bs);
-	*op_type=get_bits(4, bs);
-	if(len+skipped==MAGIC_LEN_EOF){ return 0; }
-	if(len==MAGIC_LEN_K4){
+	if(op_type){
+		*op_type=get_bits(4, bs);
+	}
+	uint8_t ls=len+skipped;
+	if(ls==MAGIC_LEN_EOF){ return 0; }
+	else if(ls==MAGIC_LEN_K4){ // Appears only in opcode decompression.
 		len=1; // "des": compressed two bytes, one left.
 		*op_type=OP_K4_CHR;
 	}
+	else if(ls==MAGIC_LEN_NULL_TERMINATED){
+		len=255; // Wait until magic null terminator.
+	}
+	else if(ls==MAGIC_LEN_7B_NULL_TERMINATED){
+		reset(); // Skip is meaningless.
+		while(1){
+			uint8_t bits=get_bits(7, bs);
+			if(!bits){ return 1; }
+			append(bits);
+		}
+	}
 	while(len--){
-		append(get_bits(5, bs)|0x60);
+		uint8_t bits=get_bits(5, bs);
+		if(!bits){ break; }
+		append(bits|0x60);
 	}
 	return 1;
 }
@@ -122,47 +141,13 @@ static uint8_t check_opcode_match(uint8_t op_type, uint16_t op, bit_state* bs){
 
 static void initialize_bit_streams(
 		bit_state* compressed_op_bs, 
-		bit_state* compressed_op_names,
-		bit_state* compressed_category_bs){
+		bit_state* compressed_op_names
+	){
 	compressed_op_bs->ptr=compressed_op_bits;
 	compressed_op_bs->curbit=0;
 
 	compressed_op_names->ptr=compressed_name_bits;
 	compressed_op_names->curbit=0;
-
-	compressed_category_bs->ptr=compressed_category_bits;
-	compressed_category_bs->curbit=0;
-}
-
-#ifndef F_CPU
-#define pc(c) printf("%c", (c))
-#else
-#define pc(c) DDRB=(c)
-#endif
-
-static void print_all(){
-	uint8_t op_type;
-
-	const char* catname=category_names;
-	bit_state compressed_op_bs, compressed_op_names, compressed_category_bs;
-	for(int category=0; category<4; category++){
-		while(*catname){
-			pc(*catname++);
-		}
-		catname++;
-		pc('\n');
-		initialize_bit_streams(&compressed_op_bs, &compressed_op_names, &compressed_category_bs);
-
-		while(next_opcode(&op_type, &compressed_op_names)){
-			uint8_t cat=get_bits(2, &compressed_category_bs);
-			if(cat==category){
-				for(uint8_t* c=buffer; c<buf; c++){
-					pc(*c);
-				}
-				pc('\n');
-			}
-		}
-	}
 }
 
 static void decode(uint16_t op, uint16_t next){
@@ -175,10 +160,10 @@ static void decode(uint16_t op, uint16_t next){
 
 	uint8_t op_type;
 
-	bit_state compressed_op_bs, compressed_op_names, compressed_category_bs;
-	initialize_bit_streams(&compressed_op_bs, &compressed_op_names, &compressed_category_bs);
+	bit_state compressed_op_bs, compressed_op_names;
+	initialize_bit_streams(&compressed_op_bs, &compressed_op_names);
 
-	while(next_opcode(&op_type, &compressed_op_names)){
+	while(next_string(&op_type, &compressed_op_names)){
 		if(check_opcode_match(op_type, op, &compressed_op_bs)){
 			// Found match. Let's print the name first.
 			uint8_t dreg=(op>>4)&0x1f;
@@ -357,6 +342,7 @@ static void decode(uint16_t op, uint16_t next){
 					*args++=ARG_DECBYTE;
 					*args++=(op>>4)&0xfu;
 				} break;
+				default: __builtin_unreachable();
 			}
 			break;
 		}
@@ -452,12 +438,429 @@ static void append_arguments(uint8_t* arguments, uint16_t next){
 					append_decnum(q);
 				}
 			} break;
+			default: __builtin_unreachable();
 		}
 	}
 }
 
+#define A_LEFT  1
+#define A_RIGHT 2
+#define A_PRESS 3
+
+#define B_LEFT  4
+#define B_RIGHT 5
+#define B_PRESS 6
+
+#ifndef F_CPU
+typedef struct timeval timer;
+static void select_display_line(uint8_t line){
+	if(line==0){ for(int i=0; i<100; i++) printf("\n"); }
+	else{ printf("\n"); }
+}
+static void put_character(uint8_t c){
+	printf("%c", c); fflush(stdout);
+}
+static uint8_t poll_user_input(){
+	while(1){
+		struct pollfd fds;
+		fds.fd=STDIN_FILENO;
+		fds.events=POLLIN;
+		while(poll(&fds, 1, 0)){
+			char c[1];
+			read(STDIN_FILENO, c, 1);
+			switch(c[0]){
+			case 'a': return A_LEFT;
+			case 'd': return A_RIGHT;
+			case 's': return A_PRESS;
+			case 'q': return B_LEFT;
+			case 'e': return B_RIGHT;
+			case 'w': return B_PRESS;
+			};
+		}
+		return 0;
+	}
+}
+static void start_timer(timer* t){
+	gettimeofday(t, NULL);
+}
+static uint16_t elapsed_time(timer* t){
+	timer t2;
+	gettimeofday(&t2, NULL);
+	return (t2.tv_sec-t->tv_sec)*1000+(t2.tv_usec-t->tv_usec)/1000;
+}
+int usleep (__useconds_t __useconds);
+static void small_delay(){
+	usleep(100*1000);
+}
+#else
+// Stubs for now.
+typedef struct timer{uint8_t x;} timer;
+static void select_display_line(uint8_t line){
+	DDRB=line;
+}
+static void put_character(uint8_t c){
+	DDRB=c;
+}
+static uint8_t poll_user_input(){
+	return DDRB;
+}
+static void start_timer(timer* t){
+	t->x=DDRB;
+}
+static uint16_t elapsed_time(timer* t){
+	return t->x+DDRB;
+}
+static void small_delay(){
+}
+#endif
+
+#define MOD_NONE 0
+#define MOD_UPPERCASE 1
+static void print_buffer(uint8_t size_change){
+	for(const uint8_t* c=buffer; c!=buf; c++){
+		uint8_t d=*c;
+		if(d>'z' && d<='\x7f'){
+			for(const char* cc=short_strings[d-('z'+1)]; *cc; cc++){
+				put_character(*cc);
+			}
+		}
+		else{
+			if(size_change==MOD_UPPERCASE && d>='a' && d<='z'){ d-=0x20; }
+			put_character(d);
+		}
+	}
+}
+
+static void load_string(uint8_t id){
+	reset();
+	bit_state bs;
+	bs.ptr=compressed_string_bits;
+	bs.curbit=0;
+	do {
+		next_string(0, &bs);
+	} while(id--);
+}
+
+#define MENU_MAGIC_INCREMENT_OPTIONS 0xffu
+enum {
+	MENU_SPLASH,
+	MENU_LOAD_STORE,
+	MENU_FLASH_EEPROM,
+	MENU_ARE_YOU_SURE,
+	MENU_LOCATION,
+	MENU_MAIN_MENU,
+	MENU_DEVICE
+};
+static uint8_t menus[]={          /* 1-option menus */
+	STRING_SPLASH, STRING_CONTINUE, // MENU_SPLASH
+
+	MENU_MAGIC_INCREMENT_OPTIONS, /* 2-option menus */
+
+	STRING_OPERATION, STRING_LOAD, STRING_STORE, // MENU_LOAD_STORE
+	STRING_TYPE, STRING_FLASH, STRING_EEPROM, // MENU_FLASH_EEPROM
+	STRING_ARE_YOU_SURE, STRING_YES, STRING_NO, // MENU_ARE_YOU_SURE
+
+	MENU_MAGIC_INCREMENT_OPTIONS, /* 3-option menus */
+
+	STRING_LOCATION, STRING_LOCAL, STRING_REMOTE, STRING_SD, // MENU_LOCATION
+
+	MENU_MAGIC_INCREMENT_OPTIONS, /* 4-option menus */
+
+	STRING_MAIN_MENU, STRING_EDIT, STRING_RUN, STRING_MOVE, STRING_CONFIG, // MENU_MAIN_MENU
+	STRING_DEVICE, STRING_M32, STRING_M8, STRING_T13, STRING_OTHER, // MENU_DEVICE
+};
+
+static uint8_t show_menu(uint8_t menu_index){
+	uint8_t* menu=menus;
+	uint8_t options_cnt=1;
+	while(menu_index--){
+		menu+=options_cnt+(uint8_t)1u;
+		while(*menu==MENU_MAGIC_INCREMENT_OPTIONS){
+			options_cnt++;
+			menu++;
+		}
+	};
+	int8_t sel=0;
+	while(1){
+		uint8_t* m=menu;
+		select_display_line(0);
+		load_string(*m++);
+		print_buffer(MOD_UPPERCASE);
+		select_display_line(1);
+		for(uint8_t i=0; i<options_cnt; i++){
+			put_character(sel==i ? '~' : ' '); // Tilde is right arrow
+			load_string(*m++);
+			print_buffer(MOD_UPPERCASE);
+		}
+		uint8_t ui=poll_user_input();
+		switch(ui){
+		case A_LEFT: 
+		{
+			if(sel==0){ sel=options_cnt; }
+			sel--;
+		} break;
+		case A_RIGHT: 
+		{
+			sel++;
+			if(sel==options_cnt){ sel=0; }
+		} break;
+		case A_PRESS: 
+		{
+			return sel;
+		} break;
+		};
+		small_delay();
+	}
+}
+
+static void run(){
+	// jmp to reset vector.
+}
+
+#define BLINK_DELAY 500
+static uint16_t menu_ask16(uint8_t id){
+	uint16_t choice=0;
+	uint8_t position=0;
+	uint8_t blink=0;
+	while(1){
+		select_display_line(0);
+		load_string(id);
+		print_buffer(MOD_UPPERCASE);
+		select_display_line(1);
+		put_character('0');
+		put_character('x');
+		reset();
+		uint16_t ch=choice;
+		uint8_t selected_nibble=0;
+		for(uint8_t i=3; i!=0xffu; i--){
+			uint8_t nib=(ch>>12)&0xf;
+			uint8_t draw=1;
+			if(i==position){
+				selected_nibble=nib;
+				if(blink){
+					append('_');
+					draw=0;
+				}
+			}
+			if(draw){
+			   	append_hexnibble(nib); 
+			}
+			ch<<=4;
+		}
+		print_buffer(MOD_NONE);
+		timer t;
+		start_timer(&t);
+		while(elapsed_time(&t)<BLINK_DELAY){
+			uint8_t ui=poll_user_input();
+			uint16_t p=1u<<(position*4);
+			switch(ui){
+			case A_LEFT: 
+			{
+				position++;
+				position&=3;
+			} break;
+			case A_RIGHT:
+			{
+				position--;
+				position&=3;
+			} break;
+			case B_LEFT:
+			{
+				choice-=p;
+				if(selected_nibble==0){
+					choice+=p<<4;
+				}
+			} break;
+			case B_RIGHT:
+			{
+				choice+=p;
+				if(selected_nibble==0xf){
+					choice-=p<<4;
+				}
+			} break;
+			case A_PRESS:
+			{
+				return choice;
+			} break;
+			default:
+			{
+				small_delay();
+			} break;
+			}
+		}
+		blink^=1;
+	}
+}
+
+static void do_edit(){
+	
+}
+
+static void store_local_eeprom(uint16_t read_offset, uint16_t write_offset){
+	select_display_line(read_offset-read_offset);
+	put_character('S');
+	put_character('L');
+	put_character('E');
+	select_display_line(write_offset-write_offset+1);
+}
+static void load_local_eeprom(uint16_t read_offset, uint16_t write_offset){
+	select_display_line(read_offset-read_offset);
+	put_character('L');
+	put_character('L');
+	put_character('E');
+	select_display_line(write_offset-write_offset+1);
+}
+static void store_local_flash(uint16_t read_offset, uint16_t write_offset){
+	select_display_line(read_offset-read_offset);
+	put_character('S');
+	put_character('L');
+	put_character('F');
+	select_display_line(write_offset-write_offset+1);
+}
+static void load_local_flash(uint16_t read_offset, uint16_t write_offset){
+	select_display_line(read_offset-read_offset);
+	put_character('L');
+	put_character('L');
+	put_character('F');
+	select_display_line(write_offset-write_offset+1);
+}
+static void store_remote_eeprom(uint16_t read_offset, uint16_t write_offset){
+	select_display_line(read_offset-read_offset);
+	put_character('S');
+	put_character('R');
+	put_character('E');
+	select_display_line(write_offset-write_offset+1);
+}
+static void load_remote_eeprom(uint16_t read_offset, uint16_t write_offset){
+	select_display_line(read_offset-read_offset);
+	put_character('L');
+	put_character('R');
+	put_character('E');
+	select_display_line(write_offset-write_offset+1);
+}
+static void store_remote_flash(uint16_t read_offset, uint16_t write_offset){
+	select_display_line(read_offset-read_offset);
+	put_character('S');
+	put_character('R');
+	put_character('F');
+	select_display_line(write_offset-write_offset+1);
+}
+static void load_remote_flash(uint16_t read_offset, uint16_t write_offset){
+	select_display_line(read_offset-read_offset);
+	put_character('L');
+	put_character('R');
+	put_character('F');
+	select_display_line(write_offset-write_offset+1);
+}
+static void store_sd(uint16_t read_offset, uint16_t write_offset){
+	select_display_line(read_offset-read_offset);
+	put_character('S');
+	put_character('S');
+	select_display_line(write_offset-write_offset+1);
+}
+static void load_sd(uint16_t read_offset, uint16_t write_offset){
+	select_display_line(read_offset-read_offset);
+	put_character('L');
+	put_character('S');
+	select_display_line(write_offset-write_offset+1);
+}
+
+static void menu_move(){
+	uint8_t load_store=show_menu(MENU_LOAD_STORE);
+	uint8_t location=show_menu(MENU_LOCATION);
+	uint8_t flash_eeprom=0;
+	if(location!=2){ // Local or remote.
+		flash_eeprom=show_menu(MENU_FLASH_EEPROM);
+	}
+	uint16_t ro=menu_ask16(STRING_READ_OFF);
+	uint16_t wo=menu_ask16(STRING_WRITE_OFF);
+	uint8_t sure=show_menu(MENU_ARE_YOU_SURE);
+	if(sure){
+		switch(location){
+		case 0: // Local.
+		{
+			if(flash_eeprom){
+				if(load_store){ store_local_eeprom(ro, wo); }
+				else{ load_local_eeprom(ro, wo); }
+			}
+			else{
+				if(load_store){ store_local_flash(ro, wo); }
+				else{ load_local_flash(ro, wo); }
+			}
+		} break;
+		case 1: // Remote.
+		{
+			if(flash_eeprom){
+				if(load_store){ store_remote_eeprom(ro, wo); }
+				else{ load_remote_eeprom(ro, wo); }
+			}
+			else{
+				if(load_store){ store_remote_flash(ro, wo); }
+				else{ load_remote_flash(ro, wo); }
+			}
+		} break;
+		case 2: // SD.
+		{
+			if(load_store){ store_sd(ro, wo); }
+			else{ load_sd(ro, wo); }
+		} break;
+		default: __builtin_unreachable();
+		}
+	}
+}
+
+uint16_t remote_flash_size=128;
+static void menu_config(){
+	uint8_t choice=show_menu(MENU_DEVICE);
+	switch(choice){
+	case 0:
+	case 1:
+	case 2:
+	{
+		static uint8_t sizes[]={128, 64, 32};
+		remote_flash_size=sizes[choice];
+	} break;
+	case 3:
+	{
+		remote_flash_size=menu_ask16(STRING_PAGE_SIZE);
+	} break;
+	default: __builtin_unreachable();
+	}
+}
+
+static void main_menu(){
+	while(1){
+		uint8_t choice=show_menu(MENU_MAIN_MENU);
+		switch(choice){
+		case 0: 
+		{
+			do_edit();
+		} break;
+		case 1: 
+		{
+			run();
+		} break;
+		case 2: 
+		{
+			menu_move();
+		} break;
+		case 3: 
+		{
+			menu_config();
+		} break;
+		default: __builtin_unreachable();
+		}
+	}
+}
+
+static void themain(){
+	show_menu(MENU_SPLASH);
+	main_menu();
+}
+
 int main(){
 #ifndef F_CPU
+	/*
 	for(int i=0; i<(1<<16); i++){
 		decode(i, 0); 
 		for(uint8_t* b=buffer; b!=buf; b++){
@@ -473,15 +876,16 @@ int main(){
 		}
 		printf("\n");
 	}
-	//print_all();
+	*/
 #else
 	uint16_t ctr=12345;
-	for(uint16_t i=0; ; i++){
+	for(uint16_t i=0; i!=0xfffeu; i++){
 		ctr*=3;
 		decode(i, i|ctr);
+		// Avoid optimizing out.
 		DDRB=*buf;
 		DDRB=buf[1];
-		print_all();
 	}
 #endif
+	themain();
 }

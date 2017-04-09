@@ -16,9 +16,6 @@
 #define OP_K22_STR "\x0f"
 #define OP_K4_STR "\x10"
 
-#define SHORT_SPACE_Z_COMMA_STR "{"
-#define SHORT_SPACE_Z_PLUS_STR  "|"
-
 // Skipping the following opcodes, as they are overriden by their
 // more specific versions at all times:
 // bclr, brbc, brbs, brlo, brsh, bset, cbr, lsl, rol, sbr, ser, tst
@@ -374,4 +371,44 @@ static uint16_t op_categories[]={
 	CATEGORY_LOAD_STORE,   // ld
 	CATEGORY_LOAD_STORE,   // st
 	CATEGORY_LOAD_STORE,   // st
+};
+
+const char* strings[]={
+	"",
+	"are" SHORT_SPACE_STR "you" SHORT_SPACE_STR "sure",
+	"arith",
+	"card",
+	"config",
+	"continue",
+	"cool" SHORT_SPACE_STR "avr" SHORT_SPACE_STR "programmer",
+	"device",
+	"edit",
+	"eeprom",
+	"flash",
+	"flow",
+	"load",
+	"local",
+	"location",
+	"main" SHORT_SPACE_STR "menu",
+	"mem",
+	"misc",
+	"move",
+	"no",
+	"operation",
+	"other",
+	"page" SHORT_SPACE_STR "size" SHORT_SPACE_STR "in" SHORT_SPACE_STR "bytes",
+	"read" SHORT_SPACE_STR "offset",
+	"remote",
+	"run",
+	"sd",
+	"store",
+	"type",
+	"write" SHORT_SPACE_STR "offset",
+	"yes",
+
+	"m32*",
+	"m8*",
+	"t*13",
+
+	NULL
 };

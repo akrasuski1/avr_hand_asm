@@ -2,7 +2,7 @@ gcc compress.c -o compress
 ./compress > compressed.h
 
 gcc disasm.c -o disas
-diff <(./disas | nl) <(nl avr_as)
+#diff <(./disas | nl) <(nl avr_as)
 
 avr-gcc disasm.c -I"/usr/lib/avr/include" -mmcu=atmega328p -Os -g3 -Wall \
 	-Wextra -ffunction-sections -fdata-sections -fpack-struct -fshort-enums \
