@@ -86,12 +86,47 @@ static uint8_t get_bits(uint8_t cnt){
 
 static void append_arguments(uint8_t* arguments, uint16_t next);
 
+static uint8_t next_opcode(uint8_t* op_type){
+	reset();
+	uint8_t skipped=get_bits(2);
+	skip(skipped);
+	uint8_t len=get_bits(3);
+	if(len+skipped==MAGIC_LEN_EOF){ return 0; }
+	*op_type=get_bits(4);
+	if(len==MAGIC_LEN_K4){
+		len=1; // "des": compressed two bytes, one left.
+		*op_type=OP_K4_CHR;
+	}
+	while(len--){
+		append(get_bits(5)|0x60);
+	}
+	return 1;
+}
+
+static uint8_t check_opcode_match(uint8_t op_type, uint16_t op, uint8_t** compressed_op_bits_ptr, uint8_t* compressed_op_bit){
+	uint8_t fail=0;
+	uint16_t mask=type_masks[op_type];
+	uint16_t op_tmp=op;
+	for(uint8_t bit=0; bit<16; bit++){
+		if(mask&1u){
+			fail |= ( (op_tmp&1) ^ 
+					get_bit(compressed_op_bits_ptr, compressed_op_bit));
+		}
+		mask>>=1;
+		op_tmp>>=1;
+	}
+	return !fail;
+}
+
 static void decode(uint16_t op, uint16_t next){
 	uint8_t arguments[16];
 	uint8_t* args=arguments+sizeof(arguments);
 
-	uint8_t* compressed_op_bits_ptr=compressed_op_bits;
-	uint8_t compressed_op_bit=0;
+	uint8_t* compressed_op_bits_ptr;
+	uint8_t compressed_op_bit;
+
+	compressed_op_bits_ptr=compressed_op_bits;
+	compressed_op_bit=0;
 
 	compressed_op_names_ptr=compressed_name_bits;
 	compressed_op_names_bit=0;
@@ -100,39 +135,9 @@ static void decode(uint16_t op, uint16_t next){
 		*--args=ARG_EOF;
 	}
 	*args=ARG_RESERVED;
-	while(1){
-		reset();
-		uint8_t skipped=get_bits(2);
-		skip(skipped);
-		uint8_t len=get_bits(3);
-		if(len+skipped==MAGIC_LEN_EOF){ break; }
-		uint8_t op_type=get_bits(4);
-		if(len==MAGIC_LEN_K4){
-			len=1; // "des": compressed two bytes, one left.
-			op_type=OP_K4_CHR;
-		}
-		while(len--){
-			append(get_bits(5)|0x60);
-		}
-		uint8_t fail=0;
-		uint16_t mask=type_masks[op_type];
-		uint16_t op_tmp=op;
-		for(uint8_t bit=0; bit<16; bit++){
-			if(mask&1u){
-				fail |= ( (op_tmp&1) ^ 
-						get_bit(&compressed_op_bits_ptr, &compressed_op_bit));
-			}
-			mask>>=1;
-			op_tmp>>=1;
-		}
-		/*
-		printf("// ");
-		for(uint8_t* cc=buffer; cc<buf; cc++){
-			printf("%c", *cc);
-		}
-		printf(" - skip %d mask %04x\n", skipped, type_masks[op_type]);
-		*/
-		if(!fail){
+	uint8_t op_type;
+	while(next_opcode(&op_type)){
+		if(check_opcode_match(op_type, op, &compressed_op_bits_ptr, &compressed_op_bit)){
 			// Found match. Let's print the name first.
 			uint8_t dreg=(op>>4)&0x1f;
 			uint8_t reg=(op&0xf)|((op&0x0200u)>>5);
