@@ -63,54 +63,56 @@ static void append_hexnibble(uint8_t num){
 	}
 }
 
-static uint8_t get_bit(uint8_t** ptr, uint8_t* curbit){
-	uint8_t ret=((**ptr)>>(*curbit))&1;
-	*curbit=(*curbit+1)&7;
-	if(*curbit==0){
-		(*ptr)++;
+typedef struct bit_state {
+	uint8_t* ptr;
+	uint8_t curbit;
+} bit_state;
+
+static uint8_t get_bit(bit_state* bs){
+	uint8_t ret=((*bs->ptr)>>(bs->curbit))&1;
+	bs->curbit=(bs->curbit+1)&7;
+	if(bs->curbit==0){
+		(bs->ptr)++;
 	}
 	return ret;
 }
 
-static uint8_t* compressed_op_names_ptr;
-static uint8_t compressed_op_names_bit;
-
-static uint8_t get_bits(uint8_t cnt){
+static uint8_t get_bits(uint8_t cnt, bit_state* bs){
 	uint8_t ret=0;
 	while(cnt--){
 		ret*=2;
-		ret|=get_bit(&compressed_op_names_ptr, &compressed_op_names_bit);
+		ret|=get_bit(bs);
 	}
 	return ret;
 }
 
 static void append_arguments(uint8_t* arguments, uint16_t next);
 
-static uint8_t next_opcode(uint8_t* op_type){
+static uint8_t next_opcode(uint8_t* op_type, bit_state* bs){
 	reset();
-	uint8_t skipped=get_bits(2);
+	uint8_t skipped=get_bits(2, bs);
 	skip(skipped);
-	uint8_t len=get_bits(3);
+	uint8_t len=get_bits(3, bs);
 	if(len+skipped==MAGIC_LEN_EOF){ return 0; }
-	*op_type=get_bits(4);
+	*op_type=get_bits(4, bs);
 	if(len==MAGIC_LEN_K4){
 		len=1; // "des": compressed two bytes, one left.
 		*op_type=OP_K4_CHR;
 	}
 	while(len--){
-		append(get_bits(5)|0x60);
+		append(get_bits(5, bs)|0x60);
 	}
 	return 1;
 }
 
-static uint8_t check_opcode_match(uint8_t op_type, uint16_t op, uint8_t** compressed_op_bits_ptr, uint8_t* compressed_op_bit){
+static uint8_t check_opcode_match(uint8_t op_type, uint16_t op, bit_state* bs){
 	uint8_t fail=0;
 	uint16_t mask=type_masks[op_type];
 	uint16_t op_tmp=op;
 	for(uint8_t bit=0; bit<16; bit++){
 		if(mask&1u){
 			fail |= ( (op_tmp&1) ^ 
-					get_bit(compressed_op_bits_ptr, compressed_op_bit));
+					get_bit(bs));
 		}
 		mask>>=1;
 		op_tmp>>=1;
@@ -122,22 +124,21 @@ static void decode(uint16_t op, uint16_t next){
 	uint8_t arguments[16];
 	uint8_t* args=arguments+sizeof(arguments);
 
-	uint8_t* compressed_op_bits_ptr;
-	uint8_t compressed_op_bit;
+	bit_state compressed_op_bs, compressed_op_names;
 
-	compressed_op_bits_ptr=compressed_op_bits;
-	compressed_op_bit=0;
+	compressed_op_bs.ptr=compressed_op_bits;
+	compressed_op_bs.curbit=0;
 
-	compressed_op_names_ptr=compressed_name_bits;
-	compressed_op_names_bit=0;
+	compressed_op_names.ptr=compressed_name_bits;
+	compressed_op_names.curbit=0;
 
 	while(arguments!=args){
 		*--args=ARG_EOF;
 	}
 	*args=ARG_RESERVED;
 	uint8_t op_type;
-	while(next_opcode(&op_type)){
-		if(check_opcode_match(op_type, op, &compressed_op_bits_ptr, &compressed_op_bit)){
+	while(next_opcode(&op_type, &compressed_op_names)){
+		if(check_opcode_match(op_type, op, &compressed_op_bs)){
 			// Found match. Let's print the name first.
 			uint8_t dreg=(op>>4)&0x1f;
 			uint8_t reg=(op&0xf)|((op&0x0200u)>>5);
