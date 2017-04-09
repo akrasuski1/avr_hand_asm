@@ -35,6 +35,9 @@ int main(){
 	uint8_t name_bits[10000];
 	uint8_t* namebit=name_bits;
 
+	uint8_t cat_bits[10000];
+	uint8_t* catbit=cat_bits;
+
 	uint8_t curop[100];
 	uint8_t prevop[100]={};
 
@@ -70,7 +73,6 @@ int main(){
 			op_type=0; 
 			// Length is implied 3, for "des"
 		}
-		printf("// %s - skip %d, remain: %d\n", curop, skip, sent_len);
 		store(&namebit, skip, 2);
 		store(&namebit, sent_len, 3);
 		store(&namebit, op_type, 4);
@@ -82,6 +84,7 @@ int main(){
 		for(uint8_t j=0; j<=len; j++){
 			prevop[j]=curop[j];
 		}
+		store(&catbit, op_categories[i], 2);
 	}
 	printf("// %zu bits\n", curbit-all_bits);
 	printf("static uint8_t compressed_op_bits[]=\n\t\"");
@@ -91,4 +94,9 @@ int main(){
 	printf("// %zu bits\n", namebit-name_bits);
 	printf("static uint8_t compressed_name_bits[]=\n\t\"");
 	print_all(name_bits, namebit);
+
+	printf("\n");
+	printf("// %zu bits\n", catbit-cat_bits);
+	printf("static uint8_t compressed_category_bits[]=\n\t\"");
+	print_all(cat_bits, catbit);
 }

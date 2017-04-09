@@ -17,7 +17,7 @@
 #define OP_K4_STR "\x10"
 
 #define SHORT_SPACE_Z_COMMA_STR "{"
-#define SHORT_SPACE_Z_PLUS_STR  "`"
+#define SHORT_SPACE_Z_PLUS_STR  "|"
 
 // Skipping the following opcodes, as they are overriden by their
 // more specific versions at all times:
@@ -261,3 +261,117 @@ static uint8_t op_names[]=
 	OP_R5_Y_P_STR "st"
 ;
 
+static uint16_t op_categories[]={
+	CATEGORY_ARITHMETIC,   // adc
+	CATEGORY_ARITHMETIC,   // add
+	CATEGORY_ARITHMETIC,   // adiw
+	CATEGORY_ARITHMETIC,   // and
+	CATEGORY_ARITHMETIC,   // andi
+	CATEGORY_ARITHMETIC,   // asr
+	CATEGORY_LOAD_STORE,   // bld
+	CATEGORY_CONTROL_FLOW, // brcc
+	CATEGORY_CONTROL_FLOW, // brcs
+	CATEGORY_MISC,         // break
+	CATEGORY_CONTROL_FLOW, // breq
+	CATEGORY_CONTROL_FLOW, // brge
+	CATEGORY_CONTROL_FLOW, // brhc
+	CATEGORY_CONTROL_FLOW, // brhs
+	CATEGORY_CONTROL_FLOW, // brid
+	CATEGORY_CONTROL_FLOW, // brie
+	CATEGORY_CONTROL_FLOW, // brlt
+	CATEGORY_CONTROL_FLOW, // brmi
+	CATEGORY_CONTROL_FLOW, // brne
+	CATEGORY_CONTROL_FLOW, // brpl
+	CATEGORY_CONTROL_FLOW, // brtc
+	CATEGORY_CONTROL_FLOW, // brts
+	CATEGORY_CONTROL_FLOW, // brvc
+	CATEGORY_CONTROL_FLOW, // brvs
+	CATEGORY_LOAD_STORE,   // bst
+	CATEGORY_CONTROL_FLOW, // call
+	CATEGORY_MISC,         // cbi
+	CATEGORY_MISC,         // clc
+	CATEGORY_MISC,         // clh
+	CATEGORY_MISC,         // cli
+	CATEGORY_MISC,         // cln
+	CATEGORY_MISC,         // cls
+	CATEGORY_MISC,         // clt
+	CATEGORY_MISC,         // clv
+	CATEGORY_MISC,         // clz
+	CATEGORY_ARITHMETIC,   // com
+	CATEGORY_ARITHMETIC,   // cp
+	CATEGORY_ARITHMETIC,   // cpc
+	CATEGORY_ARITHMETIC,   // cpi
+	CATEGORY_CONTROL_FLOW, // cpse
+	CATEGORY_ARITHMETIC,   // dec
+	CATEGORY_MISC,         // des
+	CATEGORY_CONTROL_FLOW, // eicall
+	CATEGORY_CONTROL_FLOW, // eijmp
+	CATEGORY_LOAD_STORE,   // elpm
+	CATEGORY_LOAD_STORE,   // elpm
+	CATEGORY_LOAD_STORE,   // elpm
+	CATEGORY_ARITHMETIC,   // eor
+	CATEGORY_ARITHMETIC,   // fmul
+	CATEGORY_ARITHMETIC,   // fmuls
+	CATEGORY_ARITHMETIC,   // fmulsu
+	CATEGORY_CONTROL_FLOW, // icall
+	CATEGORY_CONTROL_FLOW, // ijmp
+	CATEGORY_MISC,         // in
+	CATEGORY_ARITHMETIC,   // inc
+	CATEGORY_CONTROL_FLOW, // jmp
+	CATEGORY_LOAD_STORE,   // lac
+	CATEGORY_LOAD_STORE,   // las
+	CATEGORY_LOAD_STORE,   // lat
+	CATEGORY_ARITHMETIC,   // ldi
+	CATEGORY_LOAD_STORE,   // lds
+	CATEGORY_LOAD_STORE,   // lpm
+	CATEGORY_LOAD_STORE,   // lpm
+	CATEGORY_LOAD_STORE,   // lpm
+	CATEGORY_ARITHMETIC,   // lsr
+	CATEGORY_ARITHMETIC,   // mov
+	CATEGORY_ARITHMETIC,   // movw
+	CATEGORY_ARITHMETIC,   // mul
+	CATEGORY_ARITHMETIC,   // muls
+	CATEGORY_ARITHMETIC,   // mulsu
+	CATEGORY_ARITHMETIC,   // neg
+	CATEGORY_MISC,         // nop
+	CATEGORY_ARITHMETIC,   // or
+	CATEGORY_ARITHMETIC,   // ori
+	CATEGORY_MISC,         // out
+	CATEGORY_MISC,         // pop
+	CATEGORY_MISC,         // push
+	CATEGORY_CONTROL_FLOW, // rcall
+	CATEGORY_CONTROL_FLOW, // ret
+	CATEGORY_CONTROL_FLOW, // reti
+	CATEGORY_CONTROL_FLOW, // rjmp
+	CATEGORY_ARITHMETIC,   // ror
+	CATEGORY_ARITHMETIC,   // sbc
+	CATEGORY_ARITHMETIC,   // sbci
+	CATEGORY_MISC,         // sbi
+	CATEGORY_CONTROL_FLOW, // sbic
+	CATEGORY_CONTROL_FLOW, // sbis
+	CATEGORY_ARITHMETIC,   // sbiw
+	CATEGORY_CONTROL_FLOW, // sbrc
+	CATEGORY_CONTROL_FLOW, // sbrs
+	CATEGORY_MISC,         // sec
+	CATEGORY_MISC,         // seh
+	CATEGORY_MISC,         // sei
+	CATEGORY_MISC,         // sen
+	CATEGORY_MISC,         // ses
+	CATEGORY_MISC,         // set
+	CATEGORY_MISC,         // sev
+	CATEGORY_MISC,         // sez
+	CATEGORY_MISC,         // sleep
+	CATEGORY_LOAD_STORE,   // spm
+	CATEGORY_LOAD_STORE,   // spm
+	CATEGORY_LOAD_STORE,   // sts
+	CATEGORY_ARITHMETIC,   // sub
+	CATEGORY_ARITHMETIC,   // subi
+	CATEGORY_ARITHMETIC,   // swap
+	CATEGORY_MISC,         // wdr
+	CATEGORY_MISC,         // xch
+
+	CATEGORY_LOAD_STORE,   // ld
+	CATEGORY_LOAD_STORE,   // ld
+	CATEGORY_LOAD_STORE,   // st
+	CATEGORY_LOAD_STORE,   // st
+};

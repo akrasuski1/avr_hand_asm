@@ -41,6 +41,17 @@
 
 #define U16(a, b, c, d) (0b ## a ## b ## c ## d)
 
+#define CATEGORY_ARITHMETIC 0
+#define CATEGORY_LOAD_STORE 1
+#define CATEGORY_CONTROL_FLOW 2
+#define CATEGORY_MISC 3
+
+static const char* category_names=
+	"ARITHMETIC\x00"
+	"LOADSTORE\x00"
+	"CONTROL\x00"
+	"MISC";
+
 static uint16_t type_masks[]={
 	U16(1111, 1111, 1111, 1111),
 	U16(1111, 1111, 0000, 0000),
@@ -62,4 +73,4 @@ static uint16_t type_masks[]={
 };
 
 #define SHORT_SPACE_Z_COMMA_CHR '{' 
-#define SHORT_SPACE_Z_PLUS_CHR  '`' 
+#define SHORT_SPACE_Z_PLUS_CHR  '|' 
