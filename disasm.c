@@ -120,23 +120,47 @@ static uint8_t check_opcode_match(uint8_t op_type, uint16_t op, bit_state* bs){
 	return !fail;
 }
 
+static void initialize_bit_streams(bit_state* compressed_op_bs, bit_state* compressed_op_names){
+	compressed_op_bs->ptr=compressed_op_bits;
+	compressed_op_bs->curbit=0;
+
+	compressed_op_names->ptr=compressed_name_bits;
+	compressed_op_names->curbit=0;
+}
+
+static void print_all(){
+	uint8_t op_type;
+
+	bit_state compressed_op_bs, compressed_op_names;
+	initialize_bit_streams(&compressed_op_bs, &compressed_op_names);
+
+	while(next_opcode(&op_type, &compressed_op_names)){
+		for(uint8_t* c=buffer; c<buf; c++){
+#ifndef F_CPU
+			printf("%c", *c);
+#else
+			DDRB=*c;
+#endif
+		}
+#ifndef F_CPU
+		printf("\n");
+#endif
+	}
+}
+
 static void decode(uint16_t op, uint16_t next){
 	uint8_t arguments[16];
 	uint8_t* args=arguments+sizeof(arguments);
-
-	bit_state compressed_op_bs, compressed_op_names;
-
-	compressed_op_bs.ptr=compressed_op_bits;
-	compressed_op_bs.curbit=0;
-
-	compressed_op_names.ptr=compressed_name_bits;
-	compressed_op_names.curbit=0;
-
 	while(arguments!=args){
 		*--args=ARG_EOF;
 	}
 	*args=ARG_RESERVED;
+
 	uint8_t op_type;
+
+	bit_state compressed_op_bs, compressed_op_names;
+	initialize_bit_streams(&compressed_op_bs, &compressed_op_names);
+
 	while(next_opcode(&op_type, &compressed_op_names)){
 		if(check_opcode_match(op_type, op, &compressed_op_bs)){
 			// Found match. Let's print the name first.
@@ -432,6 +456,7 @@ int main(){
 		}
 		printf("\n");
 	}
+	print_all();
 #else
 	uint16_t ctr=12345;
 	for(uint16_t i=0; ; i++){
@@ -439,6 +464,7 @@ int main(){
 		decode(i, i|ctr);
 		DDRB=*buf;
 		DDRB=buf[1];
+		print_all();
 	}
 #endif
 }
