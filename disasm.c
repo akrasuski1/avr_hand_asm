@@ -859,8 +859,7 @@ static void themain(){
 }
 
 int main(){
-#ifndef F_CPU
-	/*
+#ifdef TEST
 	for(int i=0; i<(1<<16); i++){
 		decode(i, 0); 
 		for(uint8_t* b=buffer; b!=buf; b++){
@@ -876,8 +875,9 @@ int main(){
 		}
 		printf("\n");
 	}
-	*/
-#else
+	return 0;
+#endif
+#ifdef F_CPU
 	uint16_t ctr=12345;
 	for(uint16_t i=0; i!=0xfffeu; i++){
 		ctr*=3;
