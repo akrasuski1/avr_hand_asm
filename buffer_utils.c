@@ -43,3 +43,8 @@ void append_hexnibble(uint8_t num){
 		append(('a'-10)+num);
 	}
 }
+
+void append_hexbyte(uint8_t num){
+	append_hexnibble(num>>4);
+	append_hexnibble(num);
+}

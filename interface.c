@@ -32,6 +32,13 @@ uint8_t poll_user_input(){
 		return 0;
 	}
 }
+void blink_cursor(uint8_t pos){
+	put_character('\n');
+	for(int i=0; i<pos; i++){
+		put_character(' ');
+	}
+	put_character('^');
+}
 void start_timer(timer* t){
 	gettimeofday(t, NULL);
 }
@@ -102,6 +109,11 @@ void select_display_line(uint8_t line){
 void put_character(uint8_t c){
 	_delay_ms(10);
 	DDRB=c;
+	_delay_ms(10);
+}
+void blink_cursor(uint8_t pos){
+	_delay_ms(10);
+	DDRB=pos;
 	_delay_ms(10);
 }
 uint8_t poll_user_input(){

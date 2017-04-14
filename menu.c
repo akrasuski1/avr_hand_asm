@@ -89,77 +89,64 @@ uint8_t show_menu(uint8_t menu_index){
 	}
 }
 
-#define BLINK_DELAY 500
 uint16_t menu_ask16(uint8_t id){
 	uint16_t choice=0;
 	uint8_t position=0;
-	uint8_t blink=0;
 	while(1){
 		select_display_line(0);
 		load_string(id);
 		print_buffer(MOD_UPPERCASE);
 		select_display_line(1);
-		put_character('0');
-		put_character('x');
 		reset();
+		append('0');
+		append('x');
 		uint16_t ch=choice;
 		uint8_t selected_nibble=0;
 		for(uint8_t i=3; i!=0xffu; i--){
 			uint8_t nib=(ch>>12)&0xf;
-			uint8_t draw=1;
 			if(i==position){
 				selected_nibble=nib;
-				if(blink){
-					append('_');
-					draw=0;
-				}
 			}
-			if(draw){
-			   	append_hexnibble(nib); 
-			}
+			append_hexnibble(nib); 
 			ch<<=4;
 		}
 		print_buffer(MOD_NONE);
-		timer t;
-		start_timer(&t);
-		do {
-			uint8_t ui=poll_user_input();
-			uint16_t p=1u<<(position*4);
-			switch(ui){
-			case A_LEFT: 
-			{
-				position++;
-				position&=3;
-			} break;
-			case A_RIGHT:
-			{
-				position--;
-				position&=3;
-			} break;
-			case B_LEFT:
-			{
-				choice-=p;
-				if(selected_nibble==0){
-					choice+=p<<4;
-				}
-			} break;
-			case B_RIGHT:
-			{
-				choice+=p;
-				if(selected_nibble==0xf){
-					choice-=p<<4;
-				}
-			} break;
-			case A_PRESS:
-			{
-				return choice;
-			} break;
-			default:
-			{
-				small_delay();
-			} break;
+		blink_cursor(5-position);
+		uint8_t ui=poll_user_input();
+		uint16_t p=1u<<(position*4);
+		switch(ui){
+		case A_LEFT: 
+		{
+			position++;
+			position&=3;
+		} break;
+		case A_RIGHT:
+		{
+			position--;
+			position&=3;
+		} break;
+		case B_LEFT:
+		{
+			choice-=p;
+			if(selected_nibble==0){
+				choice+=p<<4;
 			}
-		} while(elapsed_time(&t)<BLINK_DELAY);
-		blink^=1;
+		} break;
+		case B_RIGHT:
+		{
+			choice+=p;
+			if(selected_nibble==0xf){
+				choice-=p<<4;
+			}
+		} break;
+		case A_PRESS:
+		{
+			return choice;
+		} break;
+		default:
+		{
+			small_delay();
+		} break;
+		}
 	}
 }

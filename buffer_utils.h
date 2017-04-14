@@ -12,5 +12,6 @@ void skip(uint8_t many);
 // Up to 9999.
 void append_decnum(uint16_t num);
 void append_hexnibble(uint8_t num);
+void append_hexbyte(uint8_t byte);
 
 #endif

@@ -254,8 +254,7 @@ void append_arguments(uint8_t* arguments, uint16_t next){
 				uint8_t bytes=byte-(ARG_HEXBYTE-1);
 				while(bytes--){
 					uint8_t num=*args++;
-					append_hexnibble(num>>4);
-					append_hexnibble(num);
+					append_hexbyte(num);
 				}
 			} break;
 			case ARG_HEX3B:

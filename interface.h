@@ -20,6 +20,7 @@ typedef struct timer{uint8_t x;} timer;
 
 void select_display_line(uint8_t line);
 void put_character(uint8_t c);
+void blink_cursor(uint8_t pos);
 uint8_t poll_user_input();
 void start_timer(timer* t);
 uint16_t elapsed_time(timer* t);
