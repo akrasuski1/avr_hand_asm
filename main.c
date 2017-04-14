@@ -8,8 +8,187 @@
 
 #include <stdint.h>
 
+uint16_t remote_flash_size=128u;
+uint16_t edit_addr;
+uint16_t program[256];
+
+#include "gen/comp_op_bits.h"
+#include "gen/comp_cat_bits.h"
+#include "gen/comp_name_bits.h"
+void cheat_sheet(uint16_t* store_location){
+	uint8_t op_cat=show_menu(MENU_OPCODE_TYPE);
+	uint8_t index=0;
+	while(1){
+		uint8_t i=index;
+		bit_state cat_bs, compressed_op_bs, compressed_op_names;
+
+		cat_bs.ptr=compressed_category_bits;
+		cat_bs.curbit=0;
+
+		compressed_op_bs.ptr=compressed_op_bits;
+		compressed_op_bs.curbit=0;
+
+		compressed_op_names.ptr=compressed_name_bits;
+		compressed_op_names.curbit=0;
+
+		uint8_t op_type;
+		uint16_t op=0;
+		uint16_t mask;
+		while(next_string(&op_type, &compressed_op_names)){
+			uint8_t cat=get_bits(2, &cat_bs);
+			mask=type_masks[op_type];
+			for(uint8_t bit=0; bit<16; bit++){
+				op>>=1;
+				if(mask&1u){
+					if(get_bit(&compressed_op_bs)){
+						op|=0x8000u;
+					}
+				}
+				mask>>=1;
+			}
+			if(cat==op_cat){
+				if(i--==0){
+					mask=type_masks[op_type];
+					break;
+				}
+			}
+		}
+		select_display_line(0);
+		decode(op, 0);
+		print_buffer(MOD_NONE);
+		select_display_line(1);
+		uint8_t ui=poll_user_input();
+		switch(ui){
+		case A_LEFT: 
+		{
+			index--;
+		} break;
+		case A_RIGHT:
+		{
+			index++;
+		} break;
+		case A_PRESS:
+		{
+			return;
+		} break;
+		case B_PRESS:
+		{
+			*store_location=op;
+			return;
+		} break;
+		default:
+		{
+			pc_delay();
+		} break;
+		}
+	}
+}
+
 void do_edit(){
-	
+	for(uint8_t i=0; i<254u; i++){
+		program[i]=(i<<8)|i;
+	}
+	uint8_t edit_mode=0;
+	uint8_t position=0;
+	while(1){
+		uint16_t op=program[edit_addr];
+		uint16_t next=program[edit_addr+1];
+		select_display_line(0);
+		reset();
+		append_hexbyte((2*edit_addr)>>8);
+		append_hexbyte(2*edit_addr);
+		append(':');
+		append(' ');
+		append_hexbyte(op>>8);
+		append(' ');
+		append_hexbyte(op);
+		append(' ');
+		append('[');
+		append_hexbyte(next>>8);
+		append(' ');
+		append_hexbyte(next);
+		append(']');
+		print_buffer(MOD_NONE);
+		select_display_line(1);
+		decode(op, next);
+		print_buffer(MOD_NONE);
+		uint8_t ui=poll_user_input();
+		if(edit_mode){
+			blink_cursor(9-position);
+			uint8_t raw_nibble=(op>>(4*position))&0xfu;
+			uint16_t add=1u<<(4*position);
+			switch(ui){
+			case A_LEFT: 
+			{
+				position++;
+			} break;
+			case A_RIGHT:
+			{
+				position--;
+			} break;
+			case B_LEFT:
+			{
+				op-=add;
+				if(raw_nibble==0){
+					op+=add<<4;
+				}
+			} break;
+			case B_RIGHT:
+			{
+				op+=add;
+				if(raw_nibble==0xf){
+					op-=add<<4;
+				}
+			} break;
+			case A_PRESS:
+			{
+				edit_mode=0;
+			} break;
+			case B_PRESS:
+			{
+				cheat_sheet(&op);
+			} break;
+			default:
+			{
+				pc_delay();
+			} break;
+			}
+			position&=3;
+			program[edit_addr]=op;
+		}
+		else{
+			switch(ui){
+			case A_LEFT: 
+			{
+				edit_addr--;
+			} break;
+			case A_RIGHT:
+			{
+				edit_addr++;
+			} break;
+			case B_LEFT:
+			{
+				edit_addr-=8;
+			} break;
+			case B_RIGHT:
+			{
+				edit_addr+=8;
+			} break;
+			case A_PRESS:
+			{
+				edit_mode=1;
+			} break;
+			case B_PRESS:
+			{
+				return;
+			} break;
+			default:
+			{
+				pc_delay();
+			} break;
+			}
+		}
+	}
 }
 
 void menu_move(){
@@ -56,7 +235,6 @@ void menu_move(){
 	}
 }
 
-uint16_t remote_flash_size=128u;
 void menu_config(){
 	uint8_t choice=show_menu(MENU_DEVICE);
 	if(choice<3u){
@@ -82,16 +260,6 @@ void main_menu(){
 }
 
 int main(){
-#ifdef __AVR__
-	uint16_t ctr=12345;
-	for(uint16_t i=0; i!=0xfffeu; i++){
-		ctr*=3;
-		decode(i, i|ctr);
-		// Avoid optimizing out.
-		DDRB=*buf;
-		DDRB=buf[1];
-	}
-#endif
 	show_menu(MENU_SPLASH);
 	main_menu();
 }

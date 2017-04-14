@@ -1,4 +1,4 @@
-SRC="interface.c buffer_utils.c decompression.c common_tables.c decode.c menu.c"
+SRC="interface.c buffer_utils.c decompression.c common_tables.c decode.c menu.c gen/*.c"
 MAIN="main.c"
 TEST="test.c"
 

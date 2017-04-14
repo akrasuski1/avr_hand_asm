@@ -40,6 +40,7 @@ static uint8_t menus[]={          /* 1-option menus */
 
 	STRING_MAIN_MENU, STRING_EDIT, STRING_RUN, STRING_MOVE, STRING_CONFIG, // MENU_MAIN_MENU
 	STRING_DEVICE, STRING_M32, STRING_M8, STRING_T13, STRING_OTHER, // MENU_DEVICE
+	STRING_TYPE, STRING_ARITH, STRING_FLOW, STRING_MEM, STRING_MISC, // MENU_OPCODE_TYPE
 };
 
 uint8_t show_menu(uint8_t menu_index){
@@ -85,7 +86,7 @@ uint8_t show_menu(uint8_t menu_index){
 			return sel;
 		} break;
 		};
-		small_delay();
+		pc_delay();
 	}
 }
 
@@ -112,18 +113,16 @@ uint16_t menu_ask16(uint8_t id){
 		}
 		print_buffer(MOD_NONE);
 		blink_cursor(5-position);
-		uint8_t ui=poll_user_input();
 		uint16_t p=1u<<(position*4);
+		uint8_t ui=poll_user_input();
 		switch(ui){
 		case A_LEFT: 
 		{
 			position++;
-			position&=3;
 		} break;
 		case A_RIGHT:
 		{
 			position--;
-			position&=3;
 		} break;
 		case B_LEFT:
 		{
@@ -145,8 +144,9 @@ uint16_t menu_ask16(uint8_t id){
 		} break;
 		default:
 		{
-			small_delay();
+			pc_delay();
 		} break;
 		}
+		position&=3;
 	}
 }

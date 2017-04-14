@@ -48,7 +48,7 @@ uint16_t elapsed_time(timer* t){
 	return (t2.tv_sec-t->tv_sec)*1000+(t2.tv_usec-t->tv_usec)/1000;
 }
 int usleep (__useconds_t __useconds);
-void small_delay(){
+void pc_delay(){
 	usleep(100*1000);
 }
 
@@ -130,8 +130,7 @@ uint16_t elapsed_time(timer* t){
 	return t->x+DDRB;
 	_delay_ms(10);
 }
-void small_delay(){
-	_delay_ms(10);
+void pc_delay(){
 }
 
 void run(){
