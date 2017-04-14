@@ -46,22 +46,33 @@ void small_delay(){
 }
 #else
 #include <avr/io.h>
+#include <util/delay.h>
 // Stubs for now.
 void select_display_line(uint8_t line){
+	_delay_ms(10);
 	DDRB=line;
+	_delay_ms(10);
 }
 void put_character(uint8_t c){
+	_delay_ms(10);
 	DDRB=c;
+	_delay_ms(10);
 }
 uint8_t poll_user_input(){
+	_delay_ms(10);
 	return DDRB;
 }
 void start_timer(timer* t){
+	_delay_ms(10);
 	t->x=DDRB;
+	_delay_ms(10);
 }
 uint16_t elapsed_time(timer* t){
+	_delay_ms(10);
 	return t->x+DDRB;
+	_delay_ms(10);
 }
 void small_delay(){
+	_delay_ms(10);
 }
 #endif
