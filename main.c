@@ -1,12 +1,8 @@
 #ifdef __AVR__
 	#include <avr/io.h>
-#else
-	#include <stdio.h>
 #endif
 
-#include "common.h"
 #include "interface.h"
-#include "buffer_utils.h"
 #include "decode.h"
 #include "menu.h"
 
@@ -14,79 +10,6 @@
 
 void do_edit(){
 	
-}
-
-void run(){
-	// jmp to reset vector.
-}
-
-void store_local_eeprom(uint16_t read_offset, uint16_t write_offset){
-	select_display_line(read_offset);
-	put_character('S');
-	put_character('L');
-	put_character('E');
-	select_display_line(write_offset);
-}
-void load_local_eeprom(uint16_t read_offset, uint16_t write_offset){
-	select_display_line(read_offset);
-	put_character('L');
-	put_character('L');
-	put_character('E');
-	select_display_line(write_offset);
-}
-void store_local_flash(uint16_t read_offset, uint16_t write_offset){
-	select_display_line(read_offset);
-	put_character('S');
-	put_character('L');
-	put_character('F');
-	select_display_line(write_offset);
-}
-void load_local_flash(uint16_t read_offset, uint16_t write_offset){
-	select_display_line(read_offset);
-	put_character('L');
-	put_character('L');
-	put_character('F');
-	select_display_line(write_offset);
-}
-void store_remote_eeprom(uint16_t read_offset, uint16_t write_offset){
-	select_display_line(read_offset);
-	put_character('S');
-	put_character('R');
-	put_character('E');
-	select_display_line(write_offset);
-}
-void load_remote_eeprom(uint16_t read_offset, uint16_t write_offset){
-	select_display_line(read_offset);
-	put_character('L');
-	put_character('R');
-	put_character('E');
-	select_display_line(write_offset);
-}
-void store_remote_flash(uint16_t read_offset, uint16_t write_offset){
-	select_display_line(read_offset);
-	put_character('S');
-	put_character('R');
-	put_character('F');
-	select_display_line(write_offset);
-}
-void load_remote_flash(uint16_t read_offset, uint16_t write_offset){
-	select_display_line(read_offset);
-	put_character('L');
-	put_character('R');
-	put_character('F');
-	select_display_line(write_offset);
-}
-void store_sd(uint16_t read_offset, uint16_t write_offset){
-	select_display_line(read_offset);
-	put_character('S');
-	put_character('S');
-	select_display_line(write_offset);
-}
-void load_sd(uint16_t read_offset, uint16_t write_offset){
-	select_display_line(read_offset);
-	put_character('L');
-	put_character('S');
-	select_display_line(write_offset);
 }
 
 void menu_move(){

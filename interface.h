@@ -24,5 +24,16 @@ uint8_t poll_user_input();
 void start_timer(timer* t);
 uint16_t elapsed_time(timer* t);
 void small_delay();
+void run();
+void store_local_eeprom(uint16_t read_offset, uint16_t write_offset);
+void load_local_eeprom(uint16_t read_offset, uint16_t write_offset);
+void store_local_flash(uint16_t read_offset, uint16_t write_offset);
+void load_local_flash(uint16_t read_offset, uint16_t write_offset);
+void store_remote_eeprom(uint16_t read_offset, uint16_t write_offset);
+void load_remote_eeprom(uint16_t read_offset, uint16_t write_offset);
+void store_remote_flash(uint16_t read_offset, uint16_t write_offset);
+void load_remote_flash(uint16_t read_offset, uint16_t write_offset);
+void store_sd(uint16_t read_offset, uint16_t write_offset);
+void load_sd(uint16_t read_offset, uint16_t write_offset);
 
 #endif
