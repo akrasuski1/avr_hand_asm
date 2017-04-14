@@ -1,5 +1,5 @@
 gcc compress.c -o obj/compress
-./compress > obj/compressed.h
+obj/compress > obj/compressed.h
 
 gcc disasm.c -DTEST -o obj/disas_test
 diff <(obj/disas_test | nl) <(nl avr_as)

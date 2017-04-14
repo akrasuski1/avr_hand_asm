@@ -1,4 +1,4 @@
-#ifdef F_CPU
+#ifdef __AVR__
 	#include <avr/io.h>
 #else
 	#include <stdio.h>
@@ -451,7 +451,7 @@ static void append_arguments(uint8_t* arguments, uint16_t next){
 #define B_RIGHT 5
 #define B_PRESS 6
 
-#ifndef F_CPU
+#ifndef __AVR__
 typedef struct timeval timer;
 static void select_display_line(uint8_t line){
 	if(line==0){ for(int i=0; i<100; i++) printf("\n"); }
@@ -877,7 +877,7 @@ int main(){
 	}
 	return 0;
 #endif
-#ifdef F_CPU
+#ifdef __AVR__
 	uint16_t ctr=12345;
 	for(uint16_t i=0; i!=0xfffeu; i++){
 		ctr*=3;
