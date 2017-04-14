@@ -1,3 +1,8 @@
+#ifndef COMMON_H_
+#define COMMON_H_
+
+#include <stdint.h>
+
 #define OP_CONST_CHR 0
 // xxxx xxxx xxxx xxxx <>
 #define OP_D4_R4_CHR 1
@@ -49,10 +54,6 @@
 #define SHORT_SPACE_Z_PLUS_STR  "|"
 #define SHORT_SPACE_STR         "}"
 
-static const char* short_strings[]={
-	" Z,", " Z+", " "
-};
-
 #define U16(a, b, c, d) (0b ## a ## b ## c ## d)
 
 #define CATEGORY_ARITHMETIC 0
@@ -60,25 +61,8 @@ static const char* short_strings[]={
 #define CATEGORY_CONTROL_FLOW 2
 #define CATEGORY_MISC 3
 
-static uint16_t type_masks[]={
-	U16(1111, 1111, 1111, 1111),
-	U16(1111, 1111, 0000, 0000),
-	U16(1111, 1111, 1000, 1000),
-	U16(1111, 1100, 0000, 0000),
-	U16(1111, 0000, 0000, 0000),
-	U16(1111, 1110, 0000, 1111),
-	U16(1101, 0010, 0000, 0000),
-	U16(1111, 1111, 0000, 0000),
-	U16(1111, 1111, 0000, 0000),
-	U16(1111, 1000, 0000, 0000),
-	U16(1111, 0000, 0000, 0000),
-	U16(1111, 1110, 0000, 1000),
-	U16(1111, 1100, 0000, 0111),
-	U16(1111, 1110, 0000, 1111),
-	U16(1111, 1110, 0000, 0000),
-	U16(1111, 1110, 0000, 1110),
-	U16(1111, 1111, 0000, 1111),
-};
+extern const char* short_strings[];
+extern uint16_t type_masks[];
 
 enum {
 	STRING_EMPTY,
@@ -117,3 +101,5 @@ enum {
 	STRING_M8,
 	STRING_T13
 };
+
+#endif
