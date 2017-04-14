@@ -8,13 +8,15 @@
 void print_buffer(uint8_t size_change){
 	for(const uint8_t* c=buffer; c!=buf; c++){
 		uint8_t d=*c;
-		if(d>'z' && d<='\x7f'){
+		if(d>'z' && d<='\x7f'){ // The six special expanded characters.
 			for(const char* cc=short_strings[d-('z'+1)]; *cc; cc++){
 				put_character(*cc);
 			}
 		}
 		else{
-			if(size_change==MOD_UPPERCASE && d>='a' && d<='z'){ d-=0x20; }
+			if(size_change==MOD_UPPERCASE && d>='a' && d<='z'){
+			   	d-=0x20; 
+			}
 			put_character(d);
 		}
 	}
@@ -42,14 +44,18 @@ static uint8_t menus[]={          /* 1-option menus */
 
 uint8_t show_menu(uint8_t menu_index){
 	uint8_t* menu=menus;
-	uint8_t options_cnt=1;
+	uint8_t options_cnt=2; // For now, including header.
 	while(menu_index--){
-		menu+=options_cnt+(uint8_t)1u;
-		while(*menu==MENU_MAGIC_INCREMENT_OPTIONS){
+		menu+=options_cnt;
+		// This should normally be "while", but "if" works too, since
+		// there is at least one menu of each size.
+		if(*menu==MENU_MAGIC_INCREMENT_OPTIONS){
 			options_cnt++;
 			menu++;
 		}
 	};
+	// Actual option count does not include header.
+	options_cnt--;
 	int8_t sel=0;
 	while(1){
 		uint8_t* m=menu;

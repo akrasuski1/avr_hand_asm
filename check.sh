@@ -10,7 +10,7 @@ obj/compress
 gcc $SRC $TEST -o obj/disas_test
 diff <(obj/disas_test | nl) <(nl avr_as)
 
-# gcc $SRC $MAIN -o obj/disas
+gcc $SRC $MAIN -o obj/disas
 
 # TO-DO: somehow disable interrupt table
 avr-gcc $SRC $MAIN -I"/usr/lib/avr/include" -mmcu=atmega328p -Os -g3 -Wall \

@@ -22,7 +22,7 @@ void menu_move(){
 	uint16_t ro=menu_ask16(STRING_READ_OFF);
 	uint16_t wo=menu_ask16(STRING_WRITE_OFF);
 	uint8_t sure=show_menu(MENU_ARE_YOU_SURE);
-	if(sure){
+	if(sure==0){ // Yes.
 		switch(location){
 		case 0: // Local.
 		{

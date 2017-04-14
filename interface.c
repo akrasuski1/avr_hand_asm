@@ -47,37 +47,48 @@ void small_delay(){
 
 void run(){
 	printf("RUN\n");
+	sleep(1);
 }
 
 void store_local_eeprom(uint16_t read_offset, uint16_t write_offset){
-	printf("%s %04x %04x\n", __FUNCTION__, read_offset, write_offset);
+	printf("%s %04x %04x\n", __func__, read_offset, write_offset);
+	sleep(1);
 }
 void load_local_eeprom(uint16_t read_offset, uint16_t write_offset){
-	printf("%s %04x %04x\n", __FUNCTION__, read_offset, write_offset);
+	printf("%s %04x %04x\n", __func__, read_offset, write_offset);
+	sleep(1);
 }
 void store_local_flash(uint16_t read_offset, uint16_t write_offset){
-	printf("%s %04x %04x\n", __FUNCTION__, read_offset, write_offset);
+	printf("%s %04x %04x\n", __func__, read_offset, write_offset);
+	sleep(1);
 }
 void load_local_flash(uint16_t read_offset, uint16_t write_offset){
-	printf("%s %04x %04x\n", __FUNCTION__, read_offset, write_offset);
+	printf("%s %04x %04x\n", __func__, read_offset, write_offset);
+	sleep(1);
 }
 void store_remote_eeprom(uint16_t read_offset, uint16_t write_offset){
-	printf("%s %04x %04x\n", __FUNCTION__, read_offset, write_offset);
+	printf("%s %04x %04x\n", __func__, read_offset, write_offset);
+	sleep(1);
 }
 void load_remote_eeprom(uint16_t read_offset, uint16_t write_offset){
-	printf("%s %04x %04x\n", __FUNCTION__, read_offset, write_offset);
+	printf("%s %04x %04x\n", __func__, read_offset, write_offset);
+	sleep(1);
 }
 void store_remote_flash(uint16_t read_offset, uint16_t write_offset){
-	printf("%s %04x %04x\n", __FUNCTION__, read_offset, write_offset);
+	printf("%s %04x %04x\n", __func__, read_offset, write_offset);
+	sleep(1);
 }
 void load_remote_flash(uint16_t read_offset, uint16_t write_offset){
-	printf("%s %04x %04x\n", __FUNCTION__, read_offset, write_offset);
+	printf("%s %04x %04x\n", __func__, read_offset, write_offset);
+	sleep(1);
 }
 void store_sd(uint16_t read_offset, uint16_t write_offset){
-	printf("%s %04x %04x\n", __FUNCTION__, read_offset, write_offset);
+	printf("%s %04x %04x\n", __func__, read_offset, write_offset);
+	sleep(1);
 }
 void load_sd(uint16_t read_offset, uint16_t write_offset){
-	printf("%s %04x %04x\n", __FUNCTION__, read_offset, write_offset);
+	printf("%s %04x %04x\n", __func__, read_offset, write_offset);
+	sleep(1);
 }
 #else
 #include <avr/io.h>
