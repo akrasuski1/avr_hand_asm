@@ -13,17 +13,12 @@ uint16_t edit_addr;
 uint16_t program[256];
 
 #include "gen/comp_op_bits.h"
-#include "gen/comp_cat_bits.h"
 #include "gen/comp_name_bits.h"
 void cheat_sheet(uint16_t* store_location){
-	uint8_t op_cat=show_menu(MENU_OPCODE_TYPE);
 	uint8_t index=0;
 	while(1){
 		uint8_t i=index;
-		bit_state cat_bs, compressed_op_bs, compressed_op_names;
-
-		cat_bs.ptr=compressed_category_bits;
-		cat_bs.curbit=0;
+		bit_state compressed_op_bs, compressed_op_names;
 
 		compressed_op_bs.ptr=compressed_op_bits;
 		compressed_op_bs.curbit=0;
@@ -35,7 +30,6 @@ void cheat_sheet(uint16_t* store_location){
 		uint16_t op=0;
 		uint16_t mask;
 		while(next_string(&op_type, &compressed_op_names)){
-			uint8_t cat=get_bits(2, &cat_bs);
 			mask=type_masks[op_type];
 			for(uint8_t bit=0; bit<16; bit++){
 				op>>=1;
@@ -46,11 +40,9 @@ void cheat_sheet(uint16_t* store_location){
 				}
 				mask>>=1;
 			}
-			if(cat==op_cat){
-				if(i--==0){
-					mask=type_masks[op_type];
-					break;
-				}
+			if(i--==0){
+				mask=type_masks[op_type];
+				break;
 			}
 		}
 		select_display_line(0);

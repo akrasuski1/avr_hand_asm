@@ -14,7 +14,6 @@ enum {
 	MENU_LOCATION,
 	MENU_MAIN_MENU,
 	MENU_DEVICE,
-	MENU_OPCODE_TYPE
 };
 
 void print_buffer(uint8_t size_change);
