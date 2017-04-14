@@ -29,9 +29,9 @@ void append_decnum(uint16_t num){
 		}
 		*dig++=remainder+10;
 	} while(num);
-	while(dig--!=digs){
-		append(*dig +'0');
-	}
+	do{
+		append(*--dig +'0');
+	} while(dig!=digs);
 }
 
 void append_hexnibble(uint8_t num){
