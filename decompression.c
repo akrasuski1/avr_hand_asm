@@ -1,6 +1,6 @@
 #include "decompression.h"
 
-#include "compressed.h"
+#include "gen/comp_str_bits.h"
 
 uint8_t get_bit(bit_state* bs){
 	uint8_t ret=((*bs->ptr)>>(bs->curbit))&1;

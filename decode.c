@@ -1,6 +1,7 @@
 #include "decode.h"
 
-#include "compressed.h"
+#include "gen/comp_op_bits.h"
+#include "gen/comp_name_bits.h"
 
 #define ARG_EOF 0
 #define ARG_REG 1

@@ -7,18 +7,18 @@
 
 #define IS_METADATA(c) ((c)<=OP_LAST)
 
-void print_all(uint8_t* from, uint8_t* to){
+void print_all(uint8_t* from, uint8_t* to, FILE* f){
 	for(int i=0; i<(to-from); i+=8){
 		if(i && i%128==0){
-			printf("\"\n\t\"");
+			fprintf(f, "\"\n\t\"");
 		}
 		uint8_t a=0;
 		for(int j=0; j<8; j++){
 			a|=from[i+j]<<j;
 		}
-		printf("\\x%02x", a);
+		fprintf(f, "\\x%02x", a);
 	}
-	printf("\";\n");
+	fprintf(f, "\";\n");
 }
 
 void store(uint8_t** where, uint8_t what, uint8_t bits){
@@ -26,6 +26,14 @@ void store(uint8_t** where, uint8_t what, uint8_t bits){
 		**where=(what>>bits)&1;
 		(*where)++;
 	}
+}
+
+void save_file(uint8_t* curbit, uint8_t* all_bits, const char* tablename, const char* fname){
+	FILE* f=fopen(fname, "w");
+	fprintf(f, "// %zu bits\n", curbit-all_bits);
+	fprintf(f, "static uint8_t %s[]=\n\t\"", tablename);
+	print_all(all_bits, curbit, f);
+	fclose(f);
 }
 
 int main(){
@@ -144,22 +152,8 @@ int main(){
 		}
 	}
 
-	printf("// %zu bits\n", curbit-all_bits);
-	printf("static uint8_t compressed_op_bits[]=\n\t\"");
-	print_all(all_bits, curbit);
-
-	printf("\n");
-	printf("// %zu bits\n", namebit-name_bits);
-	printf("static uint8_t compressed_name_bits[]=\n\t\"");
-	print_all(name_bits, namebit);
-
-	printf("\n");
-	printf("// %zu bits\n", catbit-cat_bits);
-	printf("static uint8_t compressed_category_bits[]=\n\t\"");
-	print_all(cat_bits, catbit);
-
-	printf("\n");
-	printf("// %zu bits\n", strbit-str_bits);
-	printf("static uint8_t compressed_string_bits[]=\n\t\"");
-	print_all(str_bits, strbit);
+	save_file(curbit, all_bits, "compressed_op_bits", "gen/comp_op_bits.h");
+	save_file(namebit, name_bits, "compressed_name_bits", "gen/comp_name_bits.h");
+	save_file(catbit, cat_bits, "compressed_category_bits", "gen/comp_cat_bits.h");
+	save_file(strbit, str_bits, "compressed_string_bits", "gen/comp_str_bits.h");
 }

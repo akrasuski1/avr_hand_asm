@@ -1,9 +1,11 @@
 SRC="interface.c buffer_utils.c decompression.c common_tables.c decode.c"
-MAIN="disasm.c"
+MAIN="main.c"
 TEST="test.c"
 
+mkdir -p gen obj
+
 gcc compress.c common_tables.c -o obj/compress
-obj/compress > obj/compressed.h
+obj/compress
 
 gcc $SRC $TEST -o obj/disas_test
 diff <(obj/disas_test | nl) <(nl avr_as)

@@ -5,7 +5,6 @@
 #endif
 
 #include "common.h"
-#include "compressed.h"
 #include "interface.h"
 #include "buffer_utils.h"
 #include "decompression.h"
