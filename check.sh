@@ -7,8 +7,8 @@ mkdir -p gen obj
 gcc compress.c common_tables.c -o obj/compress
 obj/compress
 
-# gcc $SRC $TEST -o obj/disas_test
-# diff <(obj/disas_test | nl) <(nl avr_as)
+gcc $SRC $TEST -o obj/disas_test
+diff <(obj/disas_test | nl) <(nl avr_as)
 
 # gcc $SRC $MAIN -o obj/disas
 

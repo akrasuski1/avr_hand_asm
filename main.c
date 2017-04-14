@@ -56,22 +56,15 @@ void menu_move(){
 	}
 }
 
-uint16_t remote_flash_size=128;
+uint16_t remote_flash_size=128u;
 void menu_config(){
 	uint8_t choice=show_menu(MENU_DEVICE);
-	switch(choice){
-	case 0:
-	case 1:
-	case 2:
-	{
-		static uint16_t sizes[]={128, 64, 32};
+	if(choice<3u){
+		static uint16_t sizes[]={128u, 64u, 32u};
 		remote_flash_size=sizes[choice];
-	} break;
-	case 3:
-	{
+	}
+	else{ // Custom size.
 		remote_flash_size=menu_ask16(STRING_PAGE_SIZE);
-	} break;
-	default: __builtin_unreachable();
 	}
 }
 
@@ -79,22 +72,10 @@ void main_menu(){
 	while(1){
 		uint8_t choice=show_menu(MENU_MAIN_MENU);
 		switch(choice){
-		case 0: 
-		{
-			do_edit();
-		} break;
-		case 1: 
-		{
-			run();
-		} break;
-		case 2: 
-		{
-			menu_move();
-		} break;
-		case 3: 
-		{
-			menu_config();
-		} break;
+		case 0: { do_edit();     } break;
+		case 1: { run();         } break;
+		case 2: { menu_move();   } break;
+		case 3: { menu_config(); } break;
 		default: __builtin_unreachable();
 		}
 	}

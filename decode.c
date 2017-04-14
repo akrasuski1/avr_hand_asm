@@ -3,16 +3,18 @@
 #include "gen/comp_op_bits.h"
 #include "gen/comp_name_bits.h"
 
-#define ARG_EOF 0
-#define ARG_REG 1
-#define ARG_HEXBYTE 2
-#define ARG_HEXWORD 3
-#define ARG_HEX3B 4
-#define ARG_DECBYTE 5
-#define ARG_OFFSET 6
-#define ARG_RESERVED 7
-#define ARG_MXP 8
-#define ARG_YPQ 9
+enum {
+	ARG_EOF,
+	ARG_REG,
+	ARG_HEXBYTE,
+	ARG_HEXWORD,
+	ARG_HEX3B,
+	ARG_DECBYTE,
+	ARG_OFFSET,
+	ARG_RESERVED,
+	ARG_MXP,
+	ARG_YPQ,
+};
 
 uint8_t check_opcode_match(uint8_t op_type, uint16_t op, bit_state* bs){
 	uint8_t fail=0;
@@ -298,10 +300,7 @@ void append_arguments(uint8_t* arguments, uint16_t next){
 			} break;
 			case ARG_RESERVED:
 			{
-				reset();
-				for(const char* c="[reserved]"; *c; c++){
-					append(*c);
-				}
+				load_string(STRING_RESERVED);
 			} break;
 			case ARG_MXP:
 			{
