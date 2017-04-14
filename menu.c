@@ -122,7 +122,7 @@ uint16_t menu_ask16(uint8_t id){
 		print_buffer(MOD_NONE);
 		timer t;
 		start_timer(&t);
-		while(elapsed_time(&t)<BLINK_DELAY){
+		do {
 			uint8_t ui=poll_user_input();
 			uint16_t p=1u<<(position*4);
 			switch(ui){
@@ -159,7 +159,7 @@ uint16_t menu_ask16(uint8_t id){
 				small_delay();
 			} break;
 			}
-		}
+		} while(elapsed_time(&t)<BLINK_DELAY);
 		blink^=1;
 	}
 }

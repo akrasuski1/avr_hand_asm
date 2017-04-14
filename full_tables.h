@@ -405,8 +405,8 @@ const char* strings[]={
 	"type",
 	"write" SHORT_SPACE_STR "offset",
 	"yes",
-	"[reserved]",
 
+	"[reserved]",
 	"m32*",
 	"m8*",
 	"t*13",
