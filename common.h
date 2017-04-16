@@ -61,6 +61,8 @@
 #define CATEGORY_CONTROL_FLOW 2
 #define CATEGORY_MISC 3
 
+#define OP_NAMES_NUM 111
+
 extern const char* short_strings[];
 extern uint16_t type_masks[];
 

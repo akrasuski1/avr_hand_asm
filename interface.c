@@ -6,7 +6,15 @@
 #include <poll.h>
 #include <sys/time.h>
 void select_display_line(uint8_t line){
-	if(line==0){ for(int i=0; i<100; i++) printf("\n"); }
+	if(line==0){ 
+		for(int i=0; i<100; i++){
+		   	printf("\n"); 
+		}
+		for(int i=0; i<20; i++){
+			printf("-");
+		}
+		printf("\n");
+	}
 	else{ printf("\n"); }
 }
 void put_character(uint8_t c){

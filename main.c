@@ -17,62 +17,67 @@ uint16_t program[256];
 void cheat_sheet(uint16_t* store_location){
 	uint8_t index=0;
 	while(1){
-		uint8_t i=index;
-		bit_state compressed_op_bs, compressed_op_names;
-
-		compressed_op_bs.ptr=compressed_op_bits;
-		compressed_op_bs.curbit=0;
-
-		compressed_op_names.ptr=compressed_name_bits;
-		compressed_op_names.curbit=0;
+		compressed_ops_names bs;
+		init_ops_names(&bs);
 
 		uint8_t op_type;
-		uint16_t op=0;
-		uint16_t mask;
-		while(next_string(&op_type, &compressed_op_names)){
-			mask=type_masks[op_type];
-			for(uint8_t bit=0; bit<16; bit++){
-				op>>=1;
-				if(mask&1u){
-					if(get_bit(&compressed_op_bs)){
-						op|=0x8000u;
-					}
-				}
-				mask>>=1;
-			}
-			if(i--==0){
-				mask=type_masks[op_type];
-				break;
-			}
-		}
+		uint16_t op;
+		uint8_t i=index;
+		do {
+			next_string(&op_type, &bs.compressed_op_names);
+			uint16_t mask=type_masks[op_type];
+			op=get_op_mask(&bs.compressed_op_bs, mask);
+		} while(i--);
 		select_display_line(0);
 		decode(op, 0);
-		print_buffer(MOD_NONE);
+		print_buffer();
 		select_display_line(1);
+		reset();
+		uint16_t mask=type_masks[op_type];
+		for(uint8_t bit=0; bit<16u; bit++){
+			if(mask&0x8000u){
+				if(op&0x8000u){
+					append('1');
+				}
+				else{
+					append('0');
+				}
+			}
+			else{
+				append('*');
+			}
+			if((bit&3)==3){
+				append(' ');
+			}
+			op<<=1;
+			mask<<=1;
+		}
+		print_buffer();
 		uint8_t ui=poll_user_input();
 		switch(ui){
 		case A_LEFT: 
-		{
-			index--;
-		} break;
 		case A_RIGHT:
 		{
-			index++;
+			index+=(ui-A_LEFT)*2-1;
 		} break;
-		case A_PRESS:
+		case B_LEFT: 
+		case B_RIGHT:
 		{
-			return;
+			index+=((ui-B_LEFT)*2-1)*8;
 		} break;
 		case B_PRESS:
-		{
 			*store_location=op;
+			// Fallthrough.
+		case A_PRESS:
 			return;
-		} break;
 		default:
 		{
 			pc_delay();
 		} break;
 		}
+		// Modulo.
+		index+=OP_NAMES_NUM;
+		if(index>=OP_NAMES_NUM){ index-=OP_NAMES_NUM; }
 	}
 }
 
@@ -87,8 +92,11 @@ void do_edit(){
 		uint16_t next=program[edit_addr+1];
 		select_display_line(0);
 		reset();
-		append_hexbyte((2*edit_addr)>>8);
-		append_hexbyte(2*edit_addr);
+		{
+			uint16_t twice=2*edit_addr;
+			append_hexbyte(twice>>8);
+			append_hexbyte(twice);
+		}
 		append(':');
 		append(' ');
 		append_hexbyte(op>>8);
@@ -100,13 +108,13 @@ void do_edit(){
 		append(' ');
 		append_hexbyte(next);
 		append(']');
-		print_buffer(MOD_NONE);
+		print_buffer();
 		select_display_line(1);
 		decode(op, next);
-		print_buffer(MOD_NONE);
+		print_buffer();
 		uint8_t ui=poll_user_input();
 		if(edit_mode){
-			blink_cursor(9-position);
+			blink_cursor(((position<2)?10:9)-position);
 			uint8_t raw_nibble=(op>>(4*position))&0xfu;
 			uint16_t add=1u<<(4*position);
 			switch(ui){

@@ -16,19 +16,32 @@ enum {
 	ARG_YPQ,
 };
 
-uint8_t check_opcode_match(uint8_t op_type, uint16_t op, bit_state* bs){
-	uint8_t fail=0;
-	uint16_t mask=type_masks[op_type];
-	uint16_t op_tmp=op;
+uint16_t get_op_mask(bit_state* bs, uint16_t mask){
+	uint16_t ret=0;
 	for(uint8_t bit=0; bit<16; bit++){
+		ret>>=1;
 		if(mask&1u){
-			fail |= ( (op_tmp&1) ^ 
-					get_bit(bs));
+			if(get_bit(bs)){
+				ret|=0x8000u;
+			}
 		}
 		mask>>=1;
-		op_tmp>>=1;
 	}
-	return !fail;
+	return ret;
+}
+
+uint8_t check_opcode_match(uint8_t op_type, uint16_t op, bit_state* bs){
+	uint16_t mask=type_masks[op_type];
+	uint16_t op_mask=get_op_mask(bs, mask);
+	return (mask&op)==op_mask;
+}
+
+void init_ops_names(compressed_ops_names* bs){
+	bs->compressed_op_bs.ptr=compressed_op_bits;
+	bs->compressed_op_bs.curbit=0;
+
+	bs->compressed_op_names.ptr=compressed_name_bits;
+	bs->compressed_op_names.curbit=0;
 }
 
 void decode(uint16_t op, uint16_t next){
@@ -41,16 +54,11 @@ void decode(uint16_t op, uint16_t next){
 
 	uint8_t op_type;
 
-	bit_state compressed_op_bs, compressed_op_names;
+	compressed_ops_names bs;
+	init_ops_names(&bs);
 
-	compressed_op_bs.ptr=compressed_op_bits;
-	compressed_op_bs.curbit=0;
-
-	compressed_op_names.ptr=compressed_name_bits;
-	compressed_op_names.curbit=0;
-
-	while(next_string(&op_type, &compressed_op_names)){
-		if(check_opcode_match(op_type, op, &compressed_op_bs)){
+	while(next_string(&op_type, &bs.compressed_op_names)){
+		if(check_opcode_match(op_type, op, &bs.compressed_op_bs)){
 			// Found match. Let's print the name first.
 			uint8_t dreg=(op>>4)&0x1f;
 			uint8_t reg=(op&0xf)|((op&0x0200u)>>5);

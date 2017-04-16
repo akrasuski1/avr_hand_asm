@@ -5,7 +5,11 @@
 #include "buffer_utils.h"
 #include "decompression.h"
 
-void print_buffer(uint8_t size_change){
+void uppercase_buffer(){
+	*buffer-=0x20; // Just the first letter.
+}
+
+void print_buffer(){
 	for(const uint8_t* c=buffer; c!=buf; c++){
 		uint8_t d=*c;
 		if(d>'z' && d<='\x7f'){ // The six special expanded characters.
@@ -14,9 +18,6 @@ void print_buffer(uint8_t size_change){
 			}
 		}
 		else{
-			if(size_change==MOD_UPPERCASE && d>='a' && d<='z'){
-			   	d-=0x20; 
-			}
 			put_character(d);
 		}
 	}
@@ -61,12 +62,14 @@ uint8_t show_menu(uint8_t menu_index){
 		uint8_t* m=menu;
 		select_display_line(0);
 		load_string(*m++);
-		print_buffer(MOD_UPPERCASE);
+		uppercase_buffer();
+		print_buffer();
 		select_display_line(1);
 		for(uint8_t i=0; i<options_cnt; i++){
 			put_character(sel==i ? '~' : ' '); // Tilde is right arrow
 			load_string(*m++);
-			print_buffer(MOD_UPPERCASE);
+			uppercase_buffer();
+			print_buffer();
 		}
 		uint8_t ui=poll_user_input();
 		switch(ui){
@@ -95,7 +98,8 @@ uint16_t menu_ask16(uint8_t id){
 	while(1){
 		select_display_line(0);
 		load_string(id);
-		print_buffer(MOD_UPPERCASE);
+		uppercase_buffer();
+		print_buffer();
 		select_display_line(1);
 		reset();
 		append('0');
@@ -110,7 +114,7 @@ uint16_t menu_ask16(uint8_t id){
 			append_hexnibble(nib); 
 			ch<<=4;
 		}
-		print_buffer(MOD_NONE);
+		print_buffer();
 		blink_cursor(5-position);
 		uint16_t p=1u<<(position*4);
 		uint8_t ui=poll_user_input();

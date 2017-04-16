@@ -26,7 +26,6 @@
 // Also, we mostly use alphabetical order - both because of aesthetics,
 // but also to compress better. We make an exception for
 // ld/ldd and st/std opcodes due to their complexity.
-#define OP_NAMES_NUM 111
 
 static uint16_t op_bits[]={
 	U16(0001, 1100, 0000, 0000), // adc
