@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "common.h"
+#include "../src/common.h"
 #include "full_tables.h"
 
 #define IS_METADATA(c) ((c)<=OP_LAST)
@@ -157,8 +157,8 @@ int main(){
 		}
 	}
 
-	save_file(curbit, all_bits, "compressed_op_bits", "gen/comp_op_bits.c");
-	save_file(namebit, name_bits, "compressed_name_bits", "gen/comp_name_bits.c");
-	//save_file(catbit, cat_bits, "compressed_category_bits", "gen/comp_cat_bits.c");
-	save_file(strbit, str_bits, "compressed_string_bits", "gen/comp_str_bits.c");
+	save_file(curbit, all_bits, "compressed_op_bits", "src/gen/comp_op_bits.c");
+	save_file(namebit, name_bits, "compressed_name_bits", "src/gen/comp_name_bits.c");
+	//save_file(catbit, cat_bits, "compressed_category_bits", "src/gen/comp_cat_bits.c");
+	save_file(strbit, str_bits, "compressed_string_bits", "src/gen/comp_str_bits.c");
 }
