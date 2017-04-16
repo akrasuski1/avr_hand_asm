@@ -201,11 +201,18 @@ void load_remote_flash(uint16_t read_offset, uint16_t write_offset){
 	put_character('F');
 	select_display_line(write_offset);
 }
+#include "petitfs/pff.h"
+extern uint16_t program[];
+FATFS fs;
 void store_sd(uint16_t read_offset, uint16_t write_offset){
-	select_display_line(read_offset);
-	put_character('S');
-	put_character('S');
-	select_display_line(write_offset);
+	// just dummy code to pull in library code.
+	pf_mount(&fs);
+	if(pf_open("app")==FR_OK){
+		pf_lseek(read_offset);
+		UINT n;
+		pf_read (program+write_offset, 100, &n);
+		pf_write(program+write_offset, 100, &n);
+	}
 }
 void load_sd(uint16_t read_offset, uint16_t write_offset){
 	select_display_line(read_offset);

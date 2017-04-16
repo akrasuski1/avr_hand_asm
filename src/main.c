@@ -174,11 +174,11 @@ void do_edit(){
 			{
 				edit_addr+=8;
 			} break;
-			case A_PRESS:
+			case B_PRESS:
 			{
 				edit_mode=1;
 			} break;
-			case B_PRESS:
+			case A_PRESS:
 			{
 				return;
 			} break;
