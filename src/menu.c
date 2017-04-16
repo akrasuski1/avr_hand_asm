@@ -57,7 +57,7 @@ uint8_t show_menu(uint8_t menu_index){
 	};
 	// Actual option count does not include header.
 	options_cnt--;
-	int8_t sel=0;
+	uint8_t sel=0;
 	while(1){
 		uint8_t* m=menu;
 		select_display_line(0);
@@ -65,12 +65,19 @@ uint8_t show_menu(uint8_t menu_index){
 		uppercase_buffer();
 		print_buffer();
 		select_display_line(1);
+		uint8_t cursor=sel;
 		for(uint8_t i=0; i<options_cnt; i++){
-			put_character(sel==i ? '~' : ' '); // Tilde is right arrow
+			if(i){
+				put_character(' ');
+			}
 			load_string(*m++);
 			uppercase_buffer();
 			print_buffer();
+			if(i<sel){
+				cursor+=buf-buffer;
+			}
 		}
+		blink_cursor(cursor);
 		uint8_t ui=poll_user_input();
 		switch(ui){
 		case A_LEFT: 
