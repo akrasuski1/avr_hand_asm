@@ -30,15 +30,17 @@ void store(uint8_t** where, uint8_t what, uint8_t bits){
 
 void save_file(uint8_t* curbit, uint8_t* all_bits, const char* tablename, const char* fname){
 	FILE* f=fopen(fname, "w");
+	fprintf(f, "#include \"../progmem_utils.h\"\n");
 	fprintf(f, "#include <stdint.h>\n");
 	fprintf(f, "// %zu bits\n", curbit-all_bits);
-	fprintf(f, "uint8_t %s[]=\n\t\"", tablename);
+	fprintf(f, "const uint8_t PROGMEM %s[]=\n\t\"", tablename);
 	print_all(all_bits, curbit, f);
 	fclose(f);
 	char* fn=strdup(fname);
 	fn[strlen(fn)-1]='h';
 	f=fopen(fn, "w");
-	fprintf(f, "extern uint8_t %s[];\n", tablename);
+	fprintf(f, "#include \"../progmem_utils.h\"\n");
+	fprintf(f, "extern const uint8_t PROGMEM %s[];\n", tablename);
 }
 
 int main(){

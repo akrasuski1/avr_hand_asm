@@ -3,7 +3,7 @@
 #include "gen/comp_str_bits.h"
 
 uint8_t get_bit(bit_state* bs){
-	uint8_t ret=((*bs->ptr)>>(bs->curbit))&1;
+	uint8_t ret=( pgm_byte(bs->ptr) >> (bs->curbit) )&1;
 	bs->curbit=(bs->curbit+1)&7;
 	if(bs->curbit==0){
 		(bs->ptr)++;

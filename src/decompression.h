@@ -4,9 +4,10 @@
 #include <stdint.h>
 #include "buffer_utils.h"
 #include "common.h"
+#include "progmem_utils.h"
 
 typedef struct bit_state {
-	uint8_t* ptr;
+	const uint8_t* PROGMEM ptr;
 	uint8_t curbit;
 } bit_state;
 
