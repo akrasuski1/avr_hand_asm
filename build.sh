@@ -1,4 +1,6 @@
-SRC="interface.c buffer_utils.c decompression.c common_tables.c decode.c menu.c gen/*.c"
+SRC="interface.c buffer_utils.c decompression.c common_tables.c decode.c "
+SRC+="menu.c gen/*.c "
+AVRSRC="petitfs/*.c"
 MAIN="main.c"
 TEST="test.c"
 
@@ -18,7 +20,7 @@ cd ..
 
 cd src
 # TO-DO: somehow disable interrupt table
-avr-gcc $SRC $MAIN -I"/usr/lib/avr/include" -mmcu=atmega8 -Os -g3 -Wall \
+avr-gcc $AVRSRC $SRC $MAIN -I"/usr/lib/avr/include" -mmcu=atmega8 -Os -g3 -Wall \
 	-Wextra -ffunction-sections -fdata-sections -fpack-struct -fshort-enums \
 	-funsigned-char -funsigned-bitfields -DF_CPU=8000000UL -std=c11 \
 	-o ../bin/avr.elf -Wl,--gc-sections \
