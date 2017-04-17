@@ -57,10 +57,42 @@ void decode(uint16_t op, uint16_t next){
 	compressed_ops_names bs;
 	init_ops_names(&bs);
 
+	uint8_t first_nibble=op>>12;
+	switch(first_nibble){
+	case 0x3:
+	case 0x4:
+	case 0x5:
+	case 0x6:
+	case 0x7:
+	case 0xe:
+	{
+		reset();
+		op_type=OP_K8_R4_CHR;
+		if(first_nibble==0xe){
+			append('l');
+			append('d');
+			append('i');
+		}
+		else{
+			static char* strings[]={
+				"cpi", "sbci", "subi", "ori", "andi"
+			};
+			char* ptr=strings[first_nibble-3];
+			while(*ptr){
+				append(*ptr++);
+			}
+		}
+		goto found;
+	} break;
+	default: break;
+	}
+
 	while(next_string(&op_type, &bs.compressed_op_names)){
 		if(check_opcode_match(op_type, op, &bs.compressed_op_bs)){
+			uint8_t dreg;
+found:
 			// Found match. Let's print the name first.
-			uint8_t dreg=(op>>4)&0x1f;
+			dreg=(op>>4)&0x1f;
 			uint8_t reg=(op&0xf)|((op&0x0200u)>>5);
 
 			*args=ARG_REG;
