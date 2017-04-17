@@ -68,6 +68,7 @@ char* op_name_table[]={
 	"spm" SHORT_SPACE_Z_PLUS_STR,
 	"st"    ,"sts"  ,"sub"   ,"subi" ,"swap","wdr" ,
 	"xch" SHORT_SPACE_Z_COMMA_STR,
+	"[reserved]",
 };
 
 enum {
@@ -89,6 +90,7 @@ enum {
 	STRING_SPM_Z_PLUS,
 	STRING_ST    ,STRING_STS  ,STRING_SUB   ,STRING_SUBI ,STRING_SWAP,STRING_WDR ,
 	STRING_XCH_Z_COMMA,
+	STRING_RESERVED_2,
 };
 
 #if __AVR__
@@ -100,7 +102,7 @@ enum {
 
 #define LEAF(name, op_type) ((name) | (op_type<<10) | LEAFFLAG)
 #define NODE(node) ((intptr_t)&node)
-#define NAME_FROM_IP(ip) (ip&0x3ff)
+#define NAME_FROM_IP(ip) (ip&0xff)
 #define OP_TYPE_FROM_IP(ip) ((ip>>10)&0x1f)
 #define IS_LEAF(ip) (ip&LEAFFLAG)
 
@@ -124,35 +126,35 @@ enum {
 // These eight nodes are disambiguating nop from 255 surrounding reserved ops.
 op_node op_node_000w={0x0001u, {
 	LEAF(STRING_NOP,      OP_CONST_CHR),
-	LEAF(STRING_RESERVED, OP_CONST_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
 }};
 op_node op_node_000z={0x0002u, {
 	NODE(op_node_000w),
-	LEAF(STRING_RESERVED, OP_CONST_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
 }};
 op_node op_node_000y={0x0004u, {
 	NODE(op_node_000z),
-	LEAF(STRING_RESERVED, OP_CONST_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
 }};
 op_node op_node_000x={0x0008u, {
 	NODE(op_node_000y),
-	LEAF(STRING_RESERVED, OP_CONST_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
 }};
 op_node op_node_00ww={0x0010u, {
 	NODE(op_node_000x),
-	LEAF(STRING_RESERVED, OP_CONST_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
 }};
 op_node op_node_00zz={0x0020u, {
 	NODE(op_node_00ww),
-	LEAF(STRING_RESERVED, OP_CONST_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
 }};
 op_node op_node_00yy={0x0040u, {
 	NODE(op_node_00zz),
-	LEAF(STRING_RESERVED, OP_CONST_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
 }};
 op_node op_node_00xx={0x0080u, {
 	NODE(op_node_00yy),
-	LEAF(STRING_RESERVED, OP_CONST_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
 }};
 
 op_node op_node_03xx={0x0088u, {
@@ -163,7 +165,7 @@ op_node op_node_03xx={0x0088u, {
 }};
 
 op_node op_node_0yyy={0x0300u, {
-	LEAF(STRING_NONE, OP_CONST_CHR), 
+	NODE(op_node_00xx), 
 	LEAF(STRING_MOVW, OP_D4_R4_CHR),
 	LEAF(STRING_MULS, OP_D4_R4_CHR),
 	NODE(op_node_03xx), 
@@ -235,7 +237,7 @@ void decode(uint16_t op, uint16_t next){
 		uint16_t mask=node->switchmask;
 		uint16_t op_tmp=op;
 		while(mask){
-			if(mask&LEAFFLAG){
+			if(mask&0x8000u){
 				bits<<=1;
 				bits|=op_tmp>>15;
 			}
