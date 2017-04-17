@@ -197,6 +197,35 @@ op_node op_node_8a={0x0200u, {
 	LEAF(STRING_ST, OP_Q_R5_CHR),
 }};
 
+op_node op_node_bxxx={0x0800u, {
+	LEAF(STRING_IN,  OP_IO_R5_CHR),
+	LEAF(STRING_OUT, OP_IO_R5_CHR),
+}};
+
+op_node op_node_f_branches={0x0c07u, {
+	LEAF(STRING_BRCS, OP_K7_CHR),
+	LEAF(STRING_BREQ, OP_K7_CHR),
+	LEAF(STRING_BRMI, OP_K7_CHR),
+	LEAF(STRING_BRVS, OP_K7_CHR),
+	LEAF(STRING_BRLT, OP_K7_CHR),
+	LEAF(STRING_BRHS, OP_K7_CHR),
+	LEAF(STRING_BRTS, OP_K7_CHR),
+	LEAF(STRING_BRIE, OP_K7_CHR),
+	LEAF(STRING_BRCC, OP_K7_CHR),
+	LEAF(STRING_BRNE, OP_K7_CHR),
+	LEAF(STRING_BRPL, OP_K7_CHR),
+	LEAF(STRING_BRVC, OP_K7_CHR),
+	LEAF(STRING_BRGE, OP_K7_CHR),
+	LEAF(STRING_BRHC, OP_K7_CHR),
+	LEAF(STRING_BRTC, OP_K7_CHR),
+	LEAF(STRING_BRID, OP_K7_CHR),
+}};
+
+op_node op_node_fxxx={0x0800u, {
+	NODE(op_node_f_branches),
+	LEAF(STRING_NONE, OP_CONST_CHR), 
+}};
+
 op_node op_node_root={0xf000u, { 
 	NODE(op_node_0xxx),
 	NODE(op_node_1xxx),
@@ -209,11 +238,11 @@ op_node op_node_root={0xf000u, {
 	NODE(op_node_8a),
 	LEAF(STRING_NONE, OP_CONST_CHR), 
 	NODE(op_node_8a),
-	LEAF(STRING_NONE, OP_CONST_CHR), 
+	NODE(op_node_bxxx),
 	LEAF(STRING_RJMP, OP_K12_CHR), 
 	LEAF(STRING_RCALL,OP_K12_CHR), 
 	LEAF(STRING_LDI,  OP_K8_R4_CHR), 
-	LEAF(STRING_NONE, OP_CONST_CHR), 
+	NODE(op_node_fxxx),
 }};
 #include <stdio.h>
 
