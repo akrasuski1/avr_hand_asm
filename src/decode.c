@@ -202,7 +202,7 @@ op_node op_node_bxxx={0x0800u, {
 	LEAF(STRING_OUT, OP_IO_R5_CHR),
 }};
 
-op_node op_node_f_branches={0x0c07u, {
+op_node op_node_f0={0x0c07u, {
 	LEAF(STRING_BRCS, OP_K7_CHR),
 	LEAF(STRING_BREQ, OP_K7_CHR),
 	LEAF(STRING_BRMI, OP_K7_CHR),
@@ -221,9 +221,21 @@ op_node op_node_f_branches={0x0c07u, {
 	LEAF(STRING_BRID, OP_K7_CHR),
 }};
 
+op_node op_node_f8_real={0x0600u, {
+	LEAF(STRING_BLD,  OP_R5_B_CHR),
+	LEAF(STRING_BST,  OP_R5_B_CHR),
+	LEAF(STRING_SBRC, OP_R5_B_CHR),
+	LEAF(STRING_SBRS, OP_R5_B_CHR),
+}};
+
+op_node op_node_f8={0x0008u, {
+	NODE(op_node_f8_real),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+}};
+
 op_node op_node_fxxx={0x0800u, {
-	NODE(op_node_f_branches),
-	LEAF(STRING_NONE, OP_CONST_CHR), 
+	NODE(op_node_f0),
+	NODE(op_node_f8),
 }};
 
 op_node op_node_root={0xf000u, { 
