@@ -44,6 +44,32 @@ void init_ops_names(compressed_ops_names* bs){
 	bs->compressed_op_names.curbit=0;
 }
 
+typedef struct op_node{
+	char* name;
+	union{
+		uint16_t switchmask;
+		uint8_t op_type;
+	};
+	uint8_t next_indexes[];
+} op_node;
+
+enum{
+	OP_CPI_NODE,
+	OP_RESERVED_NODE,
+
+	OP_ROOT_NODE,
+};
+
+op_node op_cpi_node=     {"cpi",        {.op_type=OP_K8_R4_CHR}, {}};
+op_node op_reserved_node={"[reserved]", {.op_type=OP_CONST_CHR}, {}};
+
+op_node op_root_node={0, {.switchmask=0xf000u}, { OP_RESERVED_NODE, OP_RESERVED_NODE, OP_RESERVED_NODE, OP_CPI_NODE, 
+	                                              OP_RESERVED_NODE, OP_RESERVED_NODE, OP_RESERVED_NODE, OP_RESERVED_NODE, 
+											      OP_RESERVED_NODE, OP_RESERVED_NODE, OP_RESERVED_NODE, OP_RESERVED_NODE, 
+											      OP_RESERVED_NODE, OP_RESERVED_NODE, OP_RESERVED_NODE, OP_RESERVED_NODE}};
+op_node* all_nodes[]={ &op_cpi_node, &op_reserved_node, &op_root_node };
+#include <stdio.h>
+
 void decode(uint16_t op, uint16_t next){
 	uint8_t arguments[16];
 	uint8_t* args=arguments+sizeof(arguments);
@@ -57,34 +83,29 @@ void decode(uint16_t op, uint16_t next){
 	compressed_ops_names bs;
 	init_ops_names(&bs);
 
-	uint8_t first_nibble=op>>12;
-	switch(first_nibble){
-	case 0x3:
-	case 0x4:
-	case 0x5:
-	case 0x6:
-	case 0x7:
-	case 0xe:
-	{
-		reset();
-		op_type=OP_K8_R4_CHR;
-		if(first_nibble==0xe){
-			append('l');
-			append('d');
-			append('i');
-		}
-		else{
-			static char* strings[]={
-				"cpi", "sbci", "subi", "ori", "andi"
-			};
-			char* ptr=strings[first_nibble-3];
-			while(*ptr){
-				append(*ptr++);
+	reset();
+	op_node* node=&op_root_node;
+	while(node!=&op_reserved_node){
+		char* name=node->name;
+		if(name){
+			while(*name){
+				append(*name++);
 			}
+			op_type=node->op_type;
+			goto found;
 		}
-		goto found;
-	} break;
-	default: break;
+		uint8_t bits=0;
+		uint16_t mask=node->switchmask;
+		uint16_t op_tmp=op;
+		while(mask){
+			if(mask&0x8000u){
+				bits<<=1;
+				bits|=op_tmp>>15;
+			}
+			mask<<=1;
+			op_tmp<<=1;
+		}
+		node=all_nodes[node->next_indexes[bits]];
 	}
 
 	while(next_string(&op_type, &bs.compressed_op_names)){
