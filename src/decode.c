@@ -91,11 +91,18 @@ enum {
 	STRING_XCH_Z_COMMA,
 };
 
-#define LEAF(name, op_type) ((intptr_t)(name) | ((op_type<<10) | 0x8000u))
+#if __AVR__
+#define LEAFFLAG 0x8000u
+#else
+// Yeah, dirty, I know. Assuming 64-bit here.
+#define LEAFFLAG 0x8000000000000000ull
+#endif
+
+#define LEAF(name, op_type) ((name) | (op_type<<10) | LEAFFLAG)
 #define NODE(node) ((intptr_t)&node)
 #define NAME_FROM_IP(ip) (ip&0x3ff)
 #define OP_TYPE_FROM_IP(ip) ((ip>>10)&0x1f)
-#define IS_LEAF(ip) (ip&0x8000u)
+#define IS_LEAF(ip) (ip&LEAFFLAG)
 
 //op_node op_node_reserved={"[reserved]", {.op_type=OP_CONST_CHR},    {}};
 //op_node op_node_cpi=     {"cpi",        {.op_type=OP_K8_R4_CHR},    {}};
@@ -114,6 +121,61 @@ enum {
 
 #define STRING_NONE 0xff
 
+// These eight nodes are disambiguating nop from 255 surrounding reserved ops.
+op_node op_node_000w={0x0001u, {
+	LEAF(STRING_NOP,      OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
+}};
+op_node op_node_000z={0x0002u, {
+	NODE(op_node_000w),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
+}};
+op_node op_node_000y={0x0004u, {
+	NODE(op_node_000z),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
+}};
+op_node op_node_000x={0x0008u, {
+	NODE(op_node_000y),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
+}};
+op_node op_node_00ww={0x0010u, {
+	NODE(op_node_000x),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
+}};
+op_node op_node_00zz={0x0020u, {
+	NODE(op_node_00ww),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
+}};
+op_node op_node_00yy={0x0040u, {
+	NODE(op_node_00zz),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
+}};
+op_node op_node_00xx={0x0080u, {
+	NODE(op_node_00yy),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
+}};
+
+op_node op_node_03xx={0x0088u, {
+	LEAF(STRING_MULSU,  OP_D3_R3_CHR), 
+	LEAF(STRING_FMUL,   OP_D3_R3_CHR), 
+	LEAF(STRING_FMULS,  OP_D3_R3_CHR), 
+	LEAF(STRING_FMULSU, OP_D3_R3_CHR), 
+}};
+
+op_node op_node_0yyy={0x0300u, {
+	LEAF(STRING_NONE, OP_CONST_CHR), 
+	LEAF(STRING_MOVW, OP_D4_R4_CHR),
+	LEAF(STRING_MULS, OP_D4_R4_CHR),
+	NODE(op_node_03xx), 
+}};
+
+op_node op_node_0xxx={0x0c00u, {
+	NODE(op_node_0yyy), 
+	LEAF(STRING_CPC, OP_RD_D4_R4_CHR),
+	LEAF(STRING_SBC, OP_RD_D4_R4_CHR),
+	LEAF(STRING_ADD, OP_RD_D4_R4_CHR),
+}};
+
 op_node op_node_1xxx={0x0c00u, {
 	LEAF(STRING_CPSE, OP_RD_D4_R4_CHR),
 	LEAF(STRING_CP,   OP_RD_D4_R4_CHR),
@@ -121,18 +183,30 @@ op_node op_node_1xxx={0x0c00u, {
 	LEAF(STRING_ADC,  OP_RD_D4_R4_CHR),
 }};
 
+op_node op_node_2xxx={0x0c00u, {
+	LEAF(STRING_AND, OP_RD_D4_R4_CHR),
+	LEAF(STRING_EOR, OP_RD_D4_R4_CHR),
+	LEAF(STRING_OR,  OP_RD_D4_R4_CHR),
+	LEAF(STRING_MOV, OP_RD_D4_R4_CHR),
+}};
+
+op_node op_node_8a={0x0200u, {
+	LEAF(STRING_LD, OP_Q_R5_CHR),
+	LEAF(STRING_ST, OP_Q_R5_CHR),
+}};
+
 op_node op_node_root={0xf000u, { 
-	LEAF(STRING_NONE, OP_CONST_CHR), 
+	NODE(op_node_0xxx),
 	NODE(op_node_1xxx),
-	LEAF(STRING_NONE, OP_CONST_CHR), 
+	NODE(op_node_2xxx),
 	LEAF(STRING_CPI,  OP_K8_R4_CHR), 
 	LEAF(STRING_SBCI, OP_K8_R4_CHR), 
 	LEAF(STRING_SUBI, OP_K8_R4_CHR), 
 	LEAF(STRING_ORI,  OP_K8_R4_CHR), 
 	LEAF(STRING_ANDI, OP_K8_R4_CHR), 
+	NODE(op_node_8a),
 	LEAF(STRING_NONE, OP_CONST_CHR), 
-	LEAF(STRING_NONE, OP_CONST_CHR), 
-	LEAF(STRING_NONE, OP_CONST_CHR), 
+	NODE(op_node_8a),
 	LEAF(STRING_NONE, OP_CONST_CHR), 
 	LEAF(STRING_RJMP, OP_K12_CHR), 
 	LEAF(STRING_RCALL,OP_K12_CHR), 
@@ -161,7 +235,7 @@ void decode(uint16_t op, uint16_t next){
 		uint16_t mask=node->switchmask;
 		uint16_t op_tmp=op;
 		while(mask){
-			if(mask&0x8000u){
+			if(mask&LEAFFLAG){
 				bits<<=1;
 				bits|=op_tmp>>15;
 			}
