@@ -1,36 +1,5 @@
 #include "decode.h"
 
-#include "gen/comp_op_bits.h"
-#include "gen/comp_name_bits.h"
-
-uint16_t get_op_mask(bit_state* bs, uint16_t mask){
-	uint16_t ret=0;
-	for(uint8_t bit=0; bit<16; bit++){
-		ret>>=1;
-		if(mask&1u){
-			if(get_bit(bs)){
-				ret|=0x8000u;
-			}
-		}
-		mask>>=1;
-	}
-	return ret;
-}
-
-uint8_t check_opcode_match(uint8_t op_type, uint16_t op, bit_state* bs){
-	uint16_t mask=type_masks[op_type];
-	uint16_t op_mask=get_op_mask(bs, mask);
-	return (mask&op)==op_mask;
-}
-
-void init_ops_names(compressed_ops_names* bs){
-	bs->compressed_op_bs.ptr=compressed_op_bits;
-	bs->compressed_op_bs.curbit=0;
-
-	bs->compressed_op_names.ptr=compressed_name_bits;
-	bs->compressed_op_names.curbit=0;
-}
-
 typedef struct op_node{
 	uint16_t switchmask;
 	uintptr_t next[];
@@ -93,85 +62,92 @@ enum {
 #define IS_LEAF(ip) (ip&LEAFFLAG)
 
 // These eight nodes are disambiguating nop from 255 surrounding reserved ops.
-op_node op_node_000w={0x0001u, {
+const PROGMEM op_node op_node_000w={0x0001u, {
 	LEAF(STRING_NOP,      OP_CONST_CHR),
 	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
 }};
-op_node op_node_000z={0x0002u, {
+
+const PROGMEM op_node op_node_000z={0x0002u, {
 	NODE(op_node_000w),
 	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
 }};
-op_node op_node_000y={0x0004u, {
+
+const PROGMEM op_node op_node_000y={0x0004u, {
 	NODE(op_node_000z),
 	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
 }};
-op_node op_node_000x={0x0008u, {
+
+const PROGMEM op_node op_node_000x={0x0008u, {
 	NODE(op_node_000y),
 	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
 }};
-op_node op_node_00ww={0x0010u, {
+
+const PROGMEM op_node op_node_00ww={0x0010u, {
 	NODE(op_node_000x),
 	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
 }};
-op_node op_node_00zz={0x0020u, {
+
+const PROGMEM op_node op_node_00zz={0x0020u, {
 	NODE(op_node_00ww),
 	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
 }};
-op_node op_node_00yy={0x0040u, {
+
+const PROGMEM op_node op_node_00yy={0x0040u, {
 	NODE(op_node_00zz),
 	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
 }};
-op_node op_node_00xx={0x0080u, {
+
+const PROGMEM op_node op_node_00xx={0x0080u, {
 	NODE(op_node_00yy),
 	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
 }};
 
-op_node op_node_03xx={0x0088u, {
+const PROGMEM op_node op_node_03xx={0x0088u, {
 	LEAF(STRING_MULSU,  OP_D3_R3_CHR), 
 	LEAF(STRING_FMUL,   OP_D3_R3_CHR), 
 	LEAF(STRING_FMULS,  OP_D3_R3_CHR), 
 	LEAF(STRING_FMULSU, OP_D3_R3_CHR), 
 }};
 
-op_node op_node_0yyy={0x0300u, {
+const PROGMEM op_node op_node_0yyy={0x0300u, {
 	NODE(op_node_00xx), 
 	LEAF(STRING_MOVW, OP_D4_R4_CHR),
 	LEAF(STRING_MULS, OP_D4_R4_CHR),
 	NODE(op_node_03xx), 
 }};
 
-op_node op_node_0xxx={0x0c00u, {
+const PROGMEM op_node op_node_0xxx={0x0c00u, {
 	NODE(op_node_0yyy), 
 	LEAF(STRING_CPC, OP_RD_D4_R4_CHR),
 	LEAF(STRING_SBC, OP_RD_D4_R4_CHR),
 	LEAF(STRING_ADD, OP_RD_D4_R4_CHR),
 }};
 
-op_node op_node_1xxx={0x0c00u, {
+const PROGMEM op_node op_node_1xxx={0x0c00u, {
 	LEAF(STRING_CPSE, OP_RD_D4_R4_CHR),
 	LEAF(STRING_CP,   OP_RD_D4_R4_CHR),
 	LEAF(STRING_SUB,  OP_RD_D4_R4_CHR),
 	LEAF(STRING_ADC,  OP_RD_D4_R4_CHR),
 }};
 
-op_node op_node_2xxx={0x0c00u, {
+const PROGMEM op_node op_node_2xxx={0x0c00u, {
 	LEAF(STRING_AND, OP_RD_D4_R4_CHR),
 	LEAF(STRING_EOR, OP_RD_D4_R4_CHR),
 	LEAF(STRING_OR,  OP_RD_D4_R4_CHR),
 	LEAF(STRING_MOV, OP_RD_D4_R4_CHR),
 }};
 
-op_node op_node_8a={0x0200u, {
+const PROGMEM op_node op_node_8a={0x0200u, {
 	LEAF(STRING_LD, OP_Q_R5_CHR),
 	LEAF(STRING_ST, OP_Q_R5_CHR),
 }};
 
-op_node op_node_bxxx={0x0800u, {
+const PROGMEM op_node op_node_bxxx={0x0800u, {
 	LEAF(STRING_IN,  OP_IO_R5_CHR),
 	LEAF(STRING_OUT, OP_IO_R5_CHR),
 }};
 
-op_node op_node_f0={0x0c07u, {
+const PROGMEM op_node op_node_f0={0x0c07u, {
 	LEAF(STRING_BRCS, OP_K7_CHR),
 	LEAF(STRING_BREQ, OP_K7_CHR),
 	LEAF(STRING_BRMI, OP_K7_CHR),
@@ -190,24 +166,24 @@ op_node op_node_f0={0x0c07u, {
 	LEAF(STRING_BRID, OP_K7_CHR),
 }};
 
-op_node op_node_f8_real={0x0600u, {
+const PROGMEM op_node op_node_f8_real={0x0600u, {
 	LEAF(STRING_BLD,  OP_R5_B_CHR),
 	LEAF(STRING_BST,  OP_R5_B_CHR),
 	LEAF(STRING_SBRC, OP_R5_B_CHR),
 	LEAF(STRING_SBRS, OP_R5_B_CHR),
 }};
 
-op_node op_node_f8={0x0008u, {
+const PROGMEM op_node op_node_f8={0x0008u, {
 	NODE(op_node_f8_real),
 	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
 }};
 
-op_node op_node_fxxx={0x0800u, {
+const PROGMEM op_node op_node_fxxx={0x0800u, {
 	NODE(op_node_f0),
 	NODE(op_node_f8),
 }};
 
-op_node op_node_misc1={0x000f, {
+const PROGMEM op_node op_node_misc1={0x000f, {
 	LEAF(STRING_LDS,  OP_R5_K16_CHR),
 	LEAF(STRING_LD,   OP_R5_Y_P_CHR),
 	LEAF(STRING_LD,   OP_R5_Y_P_CHR),
@@ -226,7 +202,7 @@ op_node op_node_misc1={0x000f, {
 	LEAF(STRING_POP,  OP_R5_CHR),
 }};
 
-op_node op_node_misc2={0x000f, {
+const PROGMEM op_node op_node_misc2={0x000f, {
 	LEAF(STRING_STS,  OP_R5_K16_CHR),
 	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
 	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
@@ -245,7 +221,7 @@ op_node op_node_misc2={0x000f, {
 	LEAF(STRING_PUSH, OP_R5_CHR),
 }};
 
-op_node op_node_misc_9x8x={0x01f0, {
+const PROGMEM op_node op_node_misc_9x8x={0x01f0, {
 	LEAF(STRING_SEC,  OP_CONST_CHR),
 	LEAF(STRING_SEZ,  OP_CONST_CHR),
 	LEAF(STRING_SEN,  OP_CONST_CHR),
@@ -280,34 +256,34 @@ op_node op_node_misc_9x8x={0x01f0, {
 	LEAF(STRING_SPM_Z_PLUS, OP_CONST_CHR),
 }};
 
-op_node op_node_misc_9x9x_c={0x0110, {
+const PROGMEM op_node op_node_misc_9x9x_c={0x0110, {
 	LEAF(STRING_IJMP, OP_CONST_CHR),
 	LEAF(STRING_EIJMP, OP_CONST_CHR),
 	LEAF(STRING_ICALL, OP_CONST_CHR),
 	LEAF(STRING_EICALL, OP_CONST_CHR),
 }};
 
-op_node op_node_misc_9x9x_b={0x0020, {
+const PROGMEM op_node op_node_misc_9x9x_b={0x0020, {
 	NODE(op_node_misc_9x9x_c),
 	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
 }};
 
-op_node op_node_misc_9x9x_a={0x0040, {
+const PROGMEM op_node op_node_misc_9x9x_a={0x0040, {
 	NODE(op_node_misc_9x9x_b),
 	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
 }};
 
-op_node op_node_misc_9x9x={0x0080, {
+const PROGMEM op_node op_node_misc_9x9x={0x0080, {
 	NODE(op_node_misc_9x9x_a),
 	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
 }};
 
-op_node op_node_misc_9xbx={0x0100, {
+const PROGMEM op_node op_node_misc_9xbx={0x0100, {
 	LEAF(STRING_DES, OP_K4_CHR),
 	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
 }};
 
-op_node op_node_misc3={0x000f, {
+const PROGMEM op_node op_node_misc3={0x000f, {
 	LEAF(STRING_COM,  OP_R5_CHR),
 	LEAF(STRING_NEG,  OP_R5_CHR),
 	LEAF(STRING_SWAP, OP_R5_CHR),
@@ -326,22 +302,22 @@ op_node op_node_misc3={0x000f, {
 	LEAF(STRING_CALL, OP_K22_CHR),
 }};
 
-op_node op_node_adiw_sbiw={0x0100, {
+const PROGMEM op_node op_node_adiw_sbiw={0x0100, {
 	LEAF(STRING_ADIW, OP_K6_R2_CHR),
 	LEAF(STRING_SBIW, OP_K6_R2_CHR),
 }};
 
-op_node op_node_cbi_sbic={0x0100, {
+const PROGMEM op_node op_node_cbi_sbic={0x0100, {
 	LEAF(STRING_CBI,  OP_IO_B_CHR),
 	LEAF(STRING_SBIC, OP_IO_B_CHR),
 }};
 
-op_node op_node_sbi_sbis={0x0100, {
+const PROGMEM op_node op_node_sbi_sbis={0x0100, {
 	LEAF(STRING_SBI,  OP_IO_B_CHR),
 	LEAF(STRING_SBIS, OP_IO_B_CHR),
 }};
 
-op_node op_node_9xxx={0x0e00u, {
+const PROGMEM op_node op_node_9xxx={0x0e00u, {
 	NODE(op_node_misc1),
 	NODE(op_node_misc2),
 	NODE(op_node_misc3),
@@ -352,7 +328,7 @@ op_node op_node_9xxx={0x0e00u, {
 	LEAF(STRING_MUL, OP_RD_D4_R4_CHR),
 }};
 
-op_node op_node_root={0xf000u, { 
+const PROGMEM op_node op_node_root={0xf000u, { 
 	NODE(op_node_0xxx),
 	NODE(op_node_1xxx),
 	NODE(op_node_2xxx),
@@ -444,11 +420,11 @@ void append_separator(){
 
 void decode(uint16_t op, uint16_t next){
 	reset();
-	op_node* node=&op_node_root;
+	const op_node* node=&op_node_root;
 	uint8_t op_type;
 	while(1){
 		uint8_t bits=0;
-		uint16_t mask=node->switchmask;
+		uint16_t mask=pgm_word(&node->switchmask);
 		uint16_t op_tmp=op;
 		while(mask){
 			if(mask&0x8000u){
@@ -458,7 +434,7 @@ void decode(uint16_t op, uint16_t next){
 			mask<<=1;
 			op_tmp<<=1;
 		}
-		intptr_t what=node->next[bits];
+		intptr_t what=pgm_word(&node->next[bits]);
 		if(IS_LEAF(what)){
 			uint8_t str_index=NAME_FROM_IP(what);
 			char* name=op_name_table[str_index];
