@@ -54,20 +54,20 @@ typedef struct op_node{
 } op_node;
 
 enum{
-	OP_CPI_NODE,
-	OP_RESERVED_NODE,
+	OP_NODE_CPI,
+	OP_NODE_RESERVED,
 
-	OP_ROOT_NODE,
+	OP_NODE_ROOT,
 };
 
-op_node op_cpi_node=     {"cpi",        {.op_type=OP_K8_R4_CHR}, {}};
-op_node op_reserved_node={"[reserved]", {.op_type=OP_CONST_CHR}, {}};
+op_node op_node_cpi=     {"cpi",        {.op_type=OP_K8_R4_CHR}, {}};
+op_node op_node_reserved={"[reserved]", {.op_type=OP_CONST_CHR}, {}};
 
-op_node op_root_node={0, {.switchmask=0xf000u}, { OP_RESERVED_NODE, OP_RESERVED_NODE, OP_RESERVED_NODE, OP_CPI_NODE, 
-	                                              OP_RESERVED_NODE, OP_RESERVED_NODE, OP_RESERVED_NODE, OP_RESERVED_NODE, 
-											      OP_RESERVED_NODE, OP_RESERVED_NODE, OP_RESERVED_NODE, OP_RESERVED_NODE, 
-											      OP_RESERVED_NODE, OP_RESERVED_NODE, OP_RESERVED_NODE, OP_RESERVED_NODE}};
-op_node* all_nodes[]={ &op_cpi_node, &op_reserved_node, &op_root_node };
+op_node op_node_root={0, {.switchmask=0xf000u}, { OP_NODE_RESERVED, OP_NODE_RESERVED, OP_NODE_RESERVED, OP_NODE_CPI, 
+	                                              OP_NODE_RESERVED, OP_NODE_RESERVED, OP_NODE_RESERVED, OP_NODE_RESERVED, 
+											      OP_NODE_RESERVED, OP_NODE_RESERVED, OP_NODE_RESERVED, OP_NODE_RESERVED, 
+											      OP_NODE_RESERVED, OP_NODE_RESERVED, OP_NODE_RESERVED, OP_NODE_RESERVED}};
+op_node* all_nodes[]={ &op_node_cpi, &op_node_reserved, &op_node_root };
 #include <stdio.h>
 
 void decode(uint16_t op, uint16_t next){
@@ -84,8 +84,8 @@ void decode(uint16_t op, uint16_t next){
 	init_ops_names(&bs);
 
 	reset();
-	op_node* node=&op_root_node;
-	while(node!=&op_reserved_node){
+	op_node* node=&op_node_root;
+	while(node!=&op_node_reserved){
 		char* name=node->name;
 		if(name){
 			while(*name){
