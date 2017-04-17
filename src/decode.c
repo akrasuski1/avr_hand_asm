@@ -3,18 +3,6 @@
 #include "gen/comp_op_bits.h"
 #include "gen/comp_name_bits.h"
 
-enum {
-	ARG_EOF,
-	ARG_REG,
-	ARG_HEXBYTE,
-	ARG_HEXWORD,
-	ARG_HEX3B,
-	ARG_DECBYTE,
-	ARG_OFFSET,
-	ARG_MXP,
-	ARG_YPQ,
-};
-
 uint16_t get_op_mask(bit_state* bs, uint16_t mask){
 	uint16_t ret=0;
 	for(uint8_t bit=0; bit<16; bit++){
@@ -455,7 +443,6 @@ void append_separator(){
 }
 
 void decode(uint16_t op, uint16_t next){
-
 	reset();
 	op_node* node=&op_node_root;
 	uint8_t op_type;

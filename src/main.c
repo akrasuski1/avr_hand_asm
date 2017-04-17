@@ -15,6 +15,8 @@ uint16_t program[256];
 #include "gen/comp_op_bits.h"
 #include "gen/comp_name_bits.h"
 void cheat_sheet(uint16_t* store_location){
+	(void)store_location;
+	/*
 	uint8_t index=0;
 	while(1){
 		compressed_ops_names bs;
@@ -79,6 +81,7 @@ void cheat_sheet(uint16_t* store_location){
 		index+=OP_NAMES_NUM;
 		if(index>=OP_NAMES_NUM){ index-=OP_NAMES_NUM; }
 	}
+	*/
 }
 
 void do_edit(){
