@@ -222,6 +222,43 @@ op_node op_node_fxxx={0x0800u, {
 	NODE(op_node_f8),
 }};
 
+op_node op_node_misc1={0x0000, {
+	LEAF(STRING_NONE, OP_CONST_CHR)
+}};
+op_node op_node_misc2={0x0000, {
+	LEAF(STRING_NONE, OP_CONST_CHR)
+}};
+
+op_node op_node_misc3={0x0000, {
+	LEAF(STRING_NONE, OP_CONST_CHR)
+}};
+
+op_node op_node_adiw_sbiw={0x0100, {
+	LEAF(STRING_ADIW, OP_K6_R2_CHR),
+	LEAF(STRING_SBIW, OP_K6_R2_CHR),
+}};
+
+op_node op_node_cbi_sbic={0x0100, {
+	LEAF(STRING_CBI,  OP_IO_B_CHR),
+	LEAF(STRING_SBIC, OP_IO_B_CHR),
+}};
+
+op_node op_node_sbi_sbis={0x0100, {
+	LEAF(STRING_SBI,  OP_IO_B_CHR),
+	LEAF(STRING_SBIS, OP_IO_B_CHR),
+}};
+
+op_node op_node_9xxx={0x0e00u, {
+	NODE(op_node_misc1),
+	NODE(op_node_misc2),
+	NODE(op_node_misc3),
+	NODE(op_node_adiw_sbiw),
+	NODE(op_node_cbi_sbic),
+	NODE(op_node_sbi_sbis),
+	LEAF(STRING_MUL, OP_RD_D4_R4_CHR),
+	LEAF(STRING_MUL, OP_RD_D4_R4_CHR),
+}};
+
 op_node op_node_root={0xf000u, { 
 	NODE(op_node_0xxx),
 	NODE(op_node_1xxx),
@@ -232,7 +269,7 @@ op_node op_node_root={0xf000u, {
 	LEAF(STRING_ORI,  OP_K8_R4_CHR), 
 	LEAF(STRING_ANDI, OP_K8_R4_CHR), 
 	NODE(op_node_8a),
-	LEAF(STRING_NONE, OP_CONST_CHR), 
+	NODE(op_node_9xxx),
 	NODE(op_node_8a),
 	NODE(op_node_bxxx),
 	LEAF(STRING_RJMP, OP_K12_CHR), 
