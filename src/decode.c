@@ -46,7 +46,7 @@ void init_ops_names(compressed_ops_names* bs){
 
 typedef struct op_node{
 	uint16_t switchmask;
-	intptr_t next[];
+	uintptr_t next[];
 } op_node;
 
 char* op_name_table[]={
@@ -96,7 +96,7 @@ enum {
 #if __AVR__
 #define LEAFFLAG 0x8000u
 #else
-#define LEAFFLAG (1ll<<(sizeof(intptr_t)*8-1))
+#define LEAFFLAG (1ull<<(sizeof(uintptr_t)*8-1))
 #endif
 
 #define LEAF(name, op_type) ((name) | (op_type<<10) | LEAFFLAG)
@@ -222,15 +222,127 @@ op_node op_node_fxxx={0x0800u, {
 	NODE(op_node_f8),
 }};
 
-op_node op_node_misc1={0x0000, {
-	LEAF(STRING_NONE, OP_CONST_CHR)
+op_node op_node_misc1={0x000f, {
+	LEAF(STRING_LDS,  OP_R5_K16_CHR),
+	LEAF(STRING_LD,   OP_R5_Y_P_CHR),
+	LEAF(STRING_LD,   OP_R5_Y_P_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_LPM,  OP_R5_CHR),
+	LEAF(STRING_LPM,  OP_R5_CHR),
+	LEAF(STRING_ELPM, OP_R5_CHR),
+	LEAF(STRING_ELPM, OP_R5_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_LD,   OP_R5_Y_P_CHR),
+	LEAF(STRING_LD,   OP_R5_Y_P_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_LD,   OP_R5_Y_P_CHR),
+	LEAF(STRING_LD,   OP_R5_Y_P_CHR),
+	LEAF(STRING_LD,   OP_R5_Y_P_CHR),
+	LEAF(STRING_POP,  OP_R5_CHR),
 }};
+
+op_node op_node_misc2x={0x000f, {
+	LEAF(STRING_STS,  OP_R5_K16_CHR),
+	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
+	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
+	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
+	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
+	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
+	LEAF(STRING_PUSH, OP_R5_CHR),
+}};
+
 op_node op_node_misc2={0x0000, {
 	LEAF(STRING_NONE, OP_CONST_CHR)
 }};
 
-op_node op_node_misc3={0x0000, {
-	LEAF(STRING_NONE, OP_CONST_CHR)
+op_node op_node_misc_9x8x={0x01f0, {
+	LEAF(STRING_SEC,  OP_CONST_CHR),
+	LEAF(STRING_SEZ,  OP_CONST_CHR),
+	LEAF(STRING_SEN,  OP_CONST_CHR),
+	LEAF(STRING_SEV,  OP_CONST_CHR),
+	LEAF(STRING_SES,  OP_CONST_CHR),
+	LEAF(STRING_SEH,  OP_CONST_CHR),
+	LEAF(STRING_SET,  OP_CONST_CHR),
+	LEAF(STRING_SEI,  OP_CONST_CHR),
+	LEAF(STRING_CLC,  OP_CONST_CHR),
+	LEAF(STRING_CLZ,  OP_CONST_CHR),
+	LEAF(STRING_CLN,  OP_CONST_CHR),
+	LEAF(STRING_CLV,  OP_CONST_CHR),
+	LEAF(STRING_CLS,  OP_CONST_CHR),
+	LEAF(STRING_CLH,  OP_CONST_CHR),
+	LEAF(STRING_CLT,  OP_CONST_CHR),
+	LEAF(STRING_CLI,  OP_CONST_CHR),
+	LEAF(STRING_RET,  OP_CONST_CHR),
+	LEAF(STRING_RETI, OP_CONST_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_SLEEP, OP_CONST_CHR),
+	LEAF(STRING_BREAK, OP_CONST_CHR),
+	LEAF(STRING_WDR,   OP_CONST_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_LPM,  OP_CONST_CHR),
+	LEAF(STRING_ELPM, OP_CONST_CHR),
+	LEAF(STRING_SPM,  OP_CONST_CHR),
+	LEAF(STRING_SPM_Z_PLUS, OP_CONST_CHR),
+}};
+
+op_node op_node_misc_9x9x_c={0x0110, {
+	LEAF(STRING_IJMP, OP_CONST_CHR),
+	LEAF(STRING_EIJMP, OP_CONST_CHR),
+	LEAF(STRING_ICALL, OP_CONST_CHR),
+	LEAF(STRING_EICALL, OP_CONST_CHR),
+}};
+
+op_node op_node_misc_9x9x_b={0x0020, {
+	NODE(op_node_misc_9x9x_c),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+}};
+
+op_node op_node_misc_9x9x_a={0x0040, {
+	NODE(op_node_misc_9x9x_b),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+}};
+
+op_node op_node_misc_9x9x={0x0080, {
+	NODE(op_node_misc_9x9x_a),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+}};
+
+op_node op_node_misc_9xbx={0x0100, {
+	LEAF(STRING_DES, OP_K4_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+}};
+
+op_node op_node_misc3={0x000f, {
+	LEAF(STRING_COM,  OP_R5_CHR),
+	LEAF(STRING_NEG,  OP_R5_CHR),
+	LEAF(STRING_SWAP, OP_R5_CHR),
+	LEAF(STRING_INC,  OP_R5_CHR),
+	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_ASR,  OP_R5_CHR),
+	LEAF(STRING_LSR,  OP_R5_CHR),
+	LEAF(STRING_ROR,  OP_R5_CHR),
+	NODE(op_node_misc_9x8x),
+	NODE(op_node_misc_9x9x),
+	LEAF(STRING_DEC,  OP_R5_CHR),
+	NODE(op_node_misc_9xbx),
+	LEAF(STRING_JMP,  OP_K22_CHR),
+	LEAF(STRING_JMP,  OP_K22_CHR),
+	LEAF(STRING_CALL, OP_K22_CHR),
+	LEAF(STRING_CALL, OP_K22_CHR),
 }};
 
 op_node op_node_adiw_sbiw={0x0100, {
@@ -309,7 +421,7 @@ void decode(uint16_t op, uint16_t next){
 		intptr_t what=node->next[bits];
 		if(IS_LEAF(what)){
 			uint8_t str_index=NAME_FROM_IP(what);
-			if(str_index==STRING_NONE){ break; } //TODO
+			if(str_index==STRING_NONE){ /*printf("");*/ break; } //TODO
 			char* name=op_name_table[str_index];
 			while(*name){
 				append(*name++);
