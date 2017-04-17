@@ -96,8 +96,7 @@ enum {
 #if __AVR__
 #define LEAFFLAG 0x8000u
 #else
-// Yeah, dirty, I know. Assuming 64-bit here.
-#define LEAFFLAG 0x8000000000000000ull
+#define LEAFFLAG (1ll<<(sizeof(intptr_t)*8-1))
 #endif
 
 #define LEAF(name, op_type) ((name) | (op_type<<10) | LEAFFLAG)
@@ -105,21 +104,6 @@ enum {
 #define NAME_FROM_IP(ip) (ip&0xff)
 #define OP_TYPE_FROM_IP(ip) ((ip>>10)&0x1f)
 #define IS_LEAF(ip) (ip&LEAFFLAG)
-
-//op_node op_node_reserved={"[reserved]", {.op_type=OP_CONST_CHR},    {}};
-//op_node op_node_cpi=     {"cpi",        {.op_type=OP_K8_R4_CHR},    {}};
-//op_node op_node_sbci=    {"sbci",       {.op_type=OP_K8_R4_CHR},    {}};
-//op_node op_node_subi=    {"subi",       {.op_type=OP_K8_R4_CHR},    {}};
-//op_node op_node_ori=     {"ori",        {.op_type=OP_K8_R4_CHR},    {}};
-//op_node op_node_andi=    {"andi",       {.op_type=OP_K8_R4_CHR},    {}};
-//op_node op_node_ldi=     {"ldi",        {.op_type=OP_K8_R4_CHR},    {}};
-//op_node op_node_rjmp=    {"rjmp",       {.op_type=OP_K12_CHR},      {}};
-//op_node op_node_rcall=   {"rcall",      {.op_type=OP_K12_CHR},      {}};
-
-//op_node op_node_cpse=    {"cpse",       {.op_type=OP_RD_D4_R4_CHR}, {}};
-//op_node op_node_cp=      {"cp",         {.op_type=OP_RD_D4_R4_CHR}, {}};
-//op_node op_node_sub=     {"sub",        {.op_type=OP_RD_D4_R4_CHR}, {}};
-//op_node op_node_adc=     {"adc",        {.op_type=OP_RD_D4_R4_CHR}, {}};
 
 #define STRING_NONE 0xff
 
