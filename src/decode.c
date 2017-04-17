@@ -45,29 +45,100 @@ void init_ops_names(compressed_ops_names* bs){
 }
 
 typedef struct op_node{
-	char* name;
-	union{
-		uint16_t switchmask;
-		uint8_t op_type;
-	};
-	uint8_t next_indexes[];
+	uint16_t switchmask;
+	intptr_t next[];
 } op_node;
 
-enum{
-	OP_NODE_CPI,
-	OP_NODE_RESERVED,
-
-	OP_NODE_ROOT,
+char* op_name_table[]={
+	"adc"   ,"add"  ,"adiw"  ,"and"  ,"andi","asr" ,"bld"  ,"brcc" ,
+	"brcs"  ,"break","breq"  ,"brge" ,"brhc","brhs","brid" ,"brie" ,
+	"brlt"  ,"brmi" ,"brne"  ,"brpl" ,"brtc","brts","brvc" ,"brvs" ,
+	"bst"   ,"call" ,"cbi"   ,"clc"  ,"clh" ,"cli" ,"cln"  ,"cls"  ,
+	"clt"   ,"clv"  ,"clz"   ,"com"  ,"cp"  ,"cpc" ,"cpi"  ,"cpse" ,
+	"dec"   ,"des"  ,"eicall","eijmp","elpm","eor" ,"fmul" ,"fmuls",
+	"fmulsu","icall","ijmp"  ,"in"   ,"inc" ,"jmp" ,
+	"lac" SHORT_SPACE_Z_COMMA_STR,
+	"las" SHORT_SPACE_Z_COMMA_STR,
+	"lat" SHORT_SPACE_Z_COMMA_STR,
+	"ld"    ,"ldi"  ,"lds"   ,"lpm"  ,"lsr" ,"mov" ,"movw" ,"mul"  ,
+	"muls"  ,"mulsu","neg"   ,"nop"  ,"or"  ,"ori" ,"out"  ,"pop"  ,
+	"push"  ,"rcall","ret"   ,"reti" ,"rjmp","ror" ,"sbc"  ,"sbci" ,
+	"sbi"   ,"sbic" ,"sbis"  ,"sbiw" ,"sbrc","sbrs","sec"  ,"seh"  ,
+	"sei"   ,"sen"  ,"ses"   ,"set"  ,"sev" ,"sez" ,"sleep","spm"  ,
+	"spm" SHORT_SPACE_Z_PLUS_STR,
+	"st"    ,"sts"  ,"sub"   ,"subi" ,"swap","wdr" ,
+	"xch" SHORT_SPACE_Z_COMMA_STR,
 };
 
-op_node op_node_cpi=     {"cpi",        {.op_type=OP_K8_R4_CHR}, {}};
-op_node op_node_reserved={"[reserved]", {.op_type=OP_CONST_CHR}, {}};
+enum {
+	STRING_ADC   ,STRING_ADD  ,STRING_ADIW  ,STRING_AND  ,STRING_ANDI,STRING_ASR ,STRING_BLD  ,STRING_BRCC ,
+	STRING_BRCS  ,STRING_BREAK,STRING_BREQ  ,STRING_BRGE ,STRING_BRHC,STRING_BRHS,STRING_BRID ,STRING_BRIE ,
+	STRING_BRLT  ,STRING_BRMI ,STRING_BRNE  ,STRING_BRPL ,STRING_BRTC,STRING_BRTS,STRING_BRVC ,STRING_BRVS ,
+	STRING_BST   ,STRING_CALL ,STRING_CBI   ,STRING_CLC  ,STRING_CLH ,STRING_CLI ,STRING_CLN  ,STRING_CLS  ,
+	STRING_CLT   ,STRING_CLV  ,STRING_CLZ   ,STRING_COM  ,STRING_CP  ,STRING_CPC ,STRING_CPI  ,STRING_CPSE ,
+	STRING_DEC   ,STRING_DES  ,STRING_EICALL,STRING_EIJMP,STRING_ELPM,STRING_EOR ,STRING_FMUL ,STRING_FMULS,
+	STRING_FMULSU,STRING_ICALL,STRING_IJMP  ,STRING_IN   ,STRING_INC ,STRING_JMP ,
+	STRING_LAC_Z_COMMA,
+	STRING_LAS_Z_COMMA,
+	STRING_LAT_Z_COMMA,
+	STRING_LD    ,STRING_LDI  ,STRING_LDS   ,STRING_LPM  ,STRING_LSR ,STRING_MOV ,STRING_MOVW ,STRING_MUL  ,
+	STRING_MULS  ,STRING_MULSU,STRING_NEG   ,STRING_NOP  ,STRING_OR  ,STRING_ORI ,STRING_OUT  ,STRING_POP  ,
+	STRING_PUSH  ,STRING_RCALL,STRING_RET   ,STRING_RETI ,STRING_RJMP,STRING_ROR ,STRING_SBC  ,STRING_SBCI ,
+	STRING_SBI   ,STRING_SBIC ,STRING_SBIS  ,STRING_SBIW ,STRING_SBRC,STRING_SBRS,STRING_SEC  ,STRING_SEH  ,
+	STRING_SEI   ,STRING_SEN  ,STRING_SES   ,STRING_SET  ,STRING_SEV ,STRING_SEZ ,STRING_SLEEP,STRING_SPM  ,
+	STRING_SPM_Z_PLUS,
+	STRING_ST    ,STRING_STS  ,STRING_SUB   ,STRING_SUBI ,STRING_SWAP,STRING_WDR ,
+	STRING_XCH_Z_COMMA,
+};
 
-op_node op_node_root={0, {.switchmask=0xf000u}, { OP_NODE_RESERVED, OP_NODE_RESERVED, OP_NODE_RESERVED, OP_NODE_CPI, 
-	                                              OP_NODE_RESERVED, OP_NODE_RESERVED, OP_NODE_RESERVED, OP_NODE_RESERVED, 
-											      OP_NODE_RESERVED, OP_NODE_RESERVED, OP_NODE_RESERVED, OP_NODE_RESERVED, 
-											      OP_NODE_RESERVED, OP_NODE_RESERVED, OP_NODE_RESERVED, OP_NODE_RESERVED}};
-op_node* all_nodes[]={ &op_node_cpi, &op_node_reserved, &op_node_root };
+#define LEAF(name, op_type) ((intptr_t)(name) | ((op_type<<10) | 0x8000u))
+#define NODE(node) ((intptr_t)&node)
+#define NAME_FROM_IP(ip) (ip&0x3ff)
+#define OP_TYPE_FROM_IP(ip) ((ip>>10)&0x1f)
+#define IS_LEAF(ip) (ip&0x8000u)
+
+//op_node op_node_reserved={"[reserved]", {.op_type=OP_CONST_CHR},    {}};
+//op_node op_node_cpi=     {"cpi",        {.op_type=OP_K8_R4_CHR},    {}};
+//op_node op_node_sbci=    {"sbci",       {.op_type=OP_K8_R4_CHR},    {}};
+//op_node op_node_subi=    {"subi",       {.op_type=OP_K8_R4_CHR},    {}};
+//op_node op_node_ori=     {"ori",        {.op_type=OP_K8_R4_CHR},    {}};
+//op_node op_node_andi=    {"andi",       {.op_type=OP_K8_R4_CHR},    {}};
+//op_node op_node_ldi=     {"ldi",        {.op_type=OP_K8_R4_CHR},    {}};
+//op_node op_node_rjmp=    {"rjmp",       {.op_type=OP_K12_CHR},      {}};
+//op_node op_node_rcall=   {"rcall",      {.op_type=OP_K12_CHR},      {}};
+
+//op_node op_node_cpse=    {"cpse",       {.op_type=OP_RD_D4_R4_CHR}, {}};
+//op_node op_node_cp=      {"cp",         {.op_type=OP_RD_D4_R4_CHR}, {}};
+//op_node op_node_sub=     {"sub",        {.op_type=OP_RD_D4_R4_CHR}, {}};
+//op_node op_node_adc=     {"adc",        {.op_type=OP_RD_D4_R4_CHR}, {}};
+
+#define STRING_NONE 0xff
+
+op_node op_node_1xxx={0x0c00u, {
+	LEAF(STRING_CPSE, OP_RD_D4_R4_CHR),
+	LEAF(STRING_CP,   OP_RD_D4_R4_CHR),
+	LEAF(STRING_SUB,  OP_RD_D4_R4_CHR),
+	LEAF(STRING_ADC,  OP_RD_D4_R4_CHR),
+}};
+
+op_node op_node_root={0xf000u, { 
+	LEAF(STRING_NONE, OP_CONST_CHR), 
+	NODE(op_node_1xxx),
+	LEAF(STRING_NONE, OP_CONST_CHR), 
+	LEAF(STRING_CPI,  OP_K8_R4_CHR), 
+	LEAF(STRING_SBCI, OP_K8_R4_CHR), 
+	LEAF(STRING_SUBI, OP_K8_R4_CHR), 
+	LEAF(STRING_ORI,  OP_K8_R4_CHR), 
+	LEAF(STRING_ANDI, OP_K8_R4_CHR), 
+	LEAF(STRING_NONE, OP_CONST_CHR), 
+	LEAF(STRING_NONE, OP_CONST_CHR), 
+	LEAF(STRING_NONE, OP_CONST_CHR), 
+	LEAF(STRING_NONE, OP_CONST_CHR), 
+	LEAF(STRING_RJMP, OP_K12_CHR), 
+	LEAF(STRING_RCALL,OP_K12_CHR), 
+	LEAF(STRING_LDI,  OP_K8_R4_CHR), 
+	LEAF(STRING_NONE, OP_CONST_CHR), 
+}};
 #include <stdio.h>
 
 void decode(uint16_t op, uint16_t next){
@@ -85,15 +156,7 @@ void decode(uint16_t op, uint16_t next){
 
 	reset();
 	op_node* node=&op_node_root;
-	while(node!=&op_node_reserved){
-		char* name=node->name;
-		if(name){
-			while(*name){
-				append(*name++);
-			}
-			op_type=node->op_type;
-			goto found;
-		}
+	while(1){
 		uint8_t bits=0;
 		uint16_t mask=node->switchmask;
 		uint16_t op_tmp=op;
@@ -105,7 +168,20 @@ void decode(uint16_t op, uint16_t next){
 			mask<<=1;
 			op_tmp<<=1;
 		}
-		node=all_nodes[node->next_indexes[bits]];
+		intptr_t what=node->next[bits];
+		if(IS_LEAF(what)){
+			uint8_t str_index=NAME_FROM_IP(what);
+			if(str_index==STRING_NONE){ break; } //TODO
+			char* name=op_name_table[str_index];
+			while(*name){
+				append(*name++);
+			}
+			op_type=OP_TYPE_FROM_IP(what);
+			goto found;
+		}
+		else{
+			node=(op_node*)what;
+		}
 	}
 
 	while(next_string(&op_type, &bs.compressed_op_names)){
