@@ -26,7 +26,7 @@ void cheat_sheet(uint16_t* store_location){
 		uint16_t op;
 		uint8_t i=index;
 		do {
-			next_string(&op_type, &bs.compressed_op_names);
+			next_string(&bs.compressed_op_names);
 			uint16_t mask=type_masks[op_type];
 			op=get_op_mask(&bs.compressed_op_bs, mask);
 		} while(i--);

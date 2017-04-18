@@ -20,19 +20,15 @@ uint8_t get_bits(uint8_t cnt, bit_state* bs){
 	return ret;
 }
 
-uint8_t next_string(uint8_t* op_type, bit_state* bs){
+uint8_t next_string(bit_state* bs){
 	reset();
 	uint8_t skipped=get_bits(2, bs);
 	skip(skipped);
 	uint8_t len=get_bits(3, bs);
-	if(op_type){
-		*op_type=get_bits(4, bs);
-	}
 	uint8_t ls=len+skipped;
 	if(ls==MAGIC_LEN_EOF){ return 0; }
 	else if(ls==MAGIC_LEN_K4){ // Appears only in opcode decompression.
 		len=1; // "des": compressed two bytes, one left.
-		*op_type=OP_K4_CHR;
 	}
 	else if(ls==MAGIC_LEN_NULL_TERMINATED){
 		len=255; // Wait until magic null terminator.
@@ -59,6 +55,6 @@ void load_string(uint8_t id){
 	bs.ptr=compressed_string_bits;
 	bs.curbit=0;
 	do {
-		next_string(0, &bs);
+		next_string(&bs);
 	} while(id--);
 }

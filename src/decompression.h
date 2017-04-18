@@ -13,7 +13,7 @@ typedef struct bit_state {
 
 uint8_t get_bit(bit_state* bs);
 uint8_t get_bits(uint8_t cnt, bit_state* bs);
-uint8_t next_string(uint8_t* op_type, bit_state* bs);
+uint8_t next_string(bit_state* bs);
 void load_string(uint8_t id);
 
 #endif // DECOMPRESSION_H
