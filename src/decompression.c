@@ -27,8 +27,8 @@ uint8_t next_string(bit_state* bs){
 	uint8_t len=get_bits(3, bs);
 	uint8_t ls=len+skipped;
 	if(ls==MAGIC_LEN_EOF){ return 0; }
-	else if(ls==MAGIC_LEN_K4){ // Appears only in opcode decompression.
-		len=1; // "des": compressed two bytes, one left.
+	else if(ls==MAGIC_LEN_RESERVED){
+		len=1;
 	}
 	else if(ls==MAGIC_LEN_NULL_TERMINATED){
 		len=255; // Wait until magic null terminator.

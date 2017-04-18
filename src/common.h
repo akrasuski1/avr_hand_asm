@@ -38,11 +38,8 @@
 #define OP_K4_CHR 16
 // xxxx xxxx kkkk xxxx <k>
 
-#define OP_FIRST OP_CONST_CHR
-#define OP_LAST OP_K4_CHR
-
 #define MAGIC_LEN_EOF 10
-#define MAGIC_LEN_K4 9
+#define MAGIC_LEN_RESERVED 9
 #define MAGIC_LEN_7B_NULL_TERMINATED 8
 #define MAGIC_LEN_NULL_TERMINATED 7
 
