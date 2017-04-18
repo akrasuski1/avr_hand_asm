@@ -5,6 +5,7 @@
 #include "interface.h"
 #include "decode.h"
 #include "menu.h"
+#include "buffer_utils.h"
 
 #include <stdint.h>
 

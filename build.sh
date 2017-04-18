@@ -1,4 +1,4 @@
-SRC="interface.c buffer_utils.c decompression.c common_tables.c decode.c "
+SRC="interface.c buffer_utils.c decompression.c common_tables.c decode.c op_tree.c "
 SRC+="menu.c gen/*.c "
 AVRSRC="petitfs/*.c "
 MAIN="main.c"

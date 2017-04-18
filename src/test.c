@@ -1,4 +1,5 @@
 #include "decode.h"
+#include "buffer_utils.h"
 
 #include <stdio.h>
 

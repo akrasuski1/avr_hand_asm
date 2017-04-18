@@ -1,6 +1,13 @@
 #include "decompression.h"
 
 #include "gen/comp_str_bits.h"
+#include "buffer_utils.h"
+#include "progmem_utils.h"
+
+typedef struct bit_state {
+	const uint8_t* PROGMEM ptr;
+	uint8_t curbit;
+} bit_state;
 
 uint8_t get_bit(bit_state* bs){
 	uint8_t ret=( pgm_byte(bs->ptr) >> (bs->curbit) )&1;
