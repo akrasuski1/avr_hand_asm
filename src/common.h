@@ -57,17 +57,9 @@
 #define SHORT_SPACE_Z_PLUS_STR  "|"
 #define SHORT_SPACE_STR         "}"
 
-#define U16(a, b, c, d) (0b ## a ## b ## c ## d)
-
-#define CATEGORY_ARITHMETIC 0
-#define CATEGORY_LOAD_STORE 1
-#define CATEGORY_CONTROL_FLOW 2
-#define CATEGORY_MISC 3
-
 #define OP_NAMES_NUM 111
 
 extern const char* short_strings[];
-extern uint16_t type_masks[];
 
 enum {
 	STRING_RESERVED,
