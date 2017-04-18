@@ -57,8 +57,14 @@ uint8_t next_string(bit_state* bs){
 }
 
 void load_string(uint8_t id){
+	const uint8_t* skip=compressed_string_bits_skiptable;
 	bit_state bs;
 	bs.ptr=compressed_string_bits;
+	while(id>=PARTITION_SIZE){
+		id-=PARTITION_SIZE;
+		bs.ptr+=pgm_byte(skip);
+		skip++;
+	}
 	bs.curbit=0;
 	do {
 		next_string(&bs);
