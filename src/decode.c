@@ -5,50 +5,6 @@ typedef struct op_node{
 	uintptr_t next[];
 } op_node;
 
-char* op_name_table[]={
-	"adc"   ,"add"  ,"adiw"  ,"and"  ,"andi","asr" ,"bld"  ,"brcc" ,
-	"brcs"  ,"break","breq"  ,"brge" ,"brhc","brhs","brid" ,"brie" ,
-	"brlt"  ,"brmi" ,"brne"  ,"brpl" ,"brtc","brts","brvc" ,"brvs" ,
-	"bst"   ,"call" ,"cbi"   ,"clc"  ,"clh" ,"cli" ,"cln"  ,"cls"  ,
-	"clt"   ,"clv"  ,"clz"   ,"com"  ,"cp"  ,"cpc" ,"cpi"  ,"cpse" ,
-	"dec"   ,"des"  ,"eicall","eijmp","elpm","eor" ,"fmul" ,"fmuls",
-	"fmulsu","icall","ijmp"  ,"in"   ,"inc" ,"jmp" ,
-	"lac" SHORT_SPACE_Z_COMMA_STR,
-	"las" SHORT_SPACE_Z_COMMA_STR,
-	"lat" SHORT_SPACE_Z_COMMA_STR,
-	"ld"    ,"ldi"  ,"lds"   ,"lpm"  ,"lsr" ,"mov" ,"movw" ,"mul"  ,
-	"muls"  ,"mulsu","neg"   ,"nop"  ,"or"  ,"ori" ,"out"  ,"pop"  ,
-	"push"  ,"rcall","ret"   ,"reti" ,"rjmp","ror" ,"sbc"  ,"sbci" ,
-	"sbi"   ,"sbic" ,"sbis"  ,"sbiw" ,"sbrc","sbrs","sec"  ,"seh"  ,
-	"sei"   ,"sen"  ,"ses"   ,"set"  ,"sev" ,"sez" ,"sleep","spm"  ,
-	"spm" SHORT_SPACE_Z_PLUS_STR,
-	"st"    ,"sts"  ,"sub"   ,"subi" ,"swap","wdr" ,
-	"xch" SHORT_SPACE_Z_COMMA_STR,
-	"[reserved]",
-};
-
-enum {
-	STRING_ADC   ,STRING_ADD  ,STRING_ADIW  ,STRING_AND  ,STRING_ANDI,STRING_ASR ,STRING_BLD  ,STRING_BRCC ,
-	STRING_BRCS  ,STRING_BREAK,STRING_BREQ  ,STRING_BRGE ,STRING_BRHC,STRING_BRHS,STRING_BRID ,STRING_BRIE ,
-	STRING_BRLT  ,STRING_BRMI ,STRING_BRNE  ,STRING_BRPL ,STRING_BRTC,STRING_BRTS,STRING_BRVC ,STRING_BRVS ,
-	STRING_BST   ,STRING_CALL ,STRING_CBI   ,STRING_CLC  ,STRING_CLH ,STRING_CLI ,STRING_CLN  ,STRING_CLS  ,
-	STRING_CLT   ,STRING_CLV  ,STRING_CLZ   ,STRING_COM  ,STRING_CP  ,STRING_CPC ,STRING_CPI  ,STRING_CPSE ,
-	STRING_DEC   ,STRING_DES  ,STRING_EICALL,STRING_EIJMP,STRING_ELPM,STRING_EOR ,STRING_FMUL ,STRING_FMULS,
-	STRING_FMULSU,STRING_ICALL,STRING_IJMP  ,STRING_IN   ,STRING_INC ,STRING_JMP ,
-	STRING_LAC_Z_COMMA,
-	STRING_LAS_Z_COMMA,
-	STRING_LAT_Z_COMMA,
-	STRING_LD    ,STRING_LDI  ,STRING_LDS   ,STRING_LPM  ,STRING_LSR ,STRING_MOV ,STRING_MOVW ,STRING_MUL  ,
-	STRING_MULS  ,STRING_MULSU,STRING_NEG   ,STRING_NOP  ,STRING_OR  ,STRING_ORI ,STRING_OUT  ,STRING_POP  ,
-	STRING_PUSH  ,STRING_RCALL,STRING_RET   ,STRING_RETI ,STRING_RJMP,STRING_ROR ,STRING_SBC  ,STRING_SBCI ,
-	STRING_SBI   ,STRING_SBIC ,STRING_SBIS  ,STRING_SBIW ,STRING_SBRC,STRING_SBRS,STRING_SEC  ,STRING_SEH  ,
-	STRING_SEI   ,STRING_SEN  ,STRING_SES   ,STRING_SET  ,STRING_SEV ,STRING_SEZ ,STRING_SLEEP,STRING_SPM  ,
-	STRING_SPM_Z_PLUS,
-	STRING_ST    ,STRING_STS  ,STRING_SUB   ,STRING_SUBI ,STRING_SWAP,STRING_WDR ,
-	STRING_XCH_Z_COMMA,
-	STRING_RESERVED_2,
-};
-
 #if __AVR__
 #define LEAFFLAG 0x8000u
 #else
@@ -64,42 +20,42 @@ enum {
 // These eight nodes are disambiguating nop from 255 surrounding reserved ops.
 const PROGMEM op_node op_node_000w={0x0001u, {
 	LEAF(STRING_NOP,      OP_CONST_CHR),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 }};
 
 const PROGMEM op_node op_node_000z={0x0002u, {
 	NODE(op_node_000w),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 }};
 
 const PROGMEM op_node op_node_000y={0x0004u, {
 	NODE(op_node_000z),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 }};
 
 const PROGMEM op_node op_node_000x={0x0008u, {
 	NODE(op_node_000y),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 }};
 
 const PROGMEM op_node op_node_00ww={0x0010u, {
 	NODE(op_node_000x),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 }};
 
 const PROGMEM op_node op_node_00zz={0x0020u, {
 	NODE(op_node_00ww),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 }};
 
 const PROGMEM op_node op_node_00yy={0x0040u, {
 	NODE(op_node_00zz),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 }};
 
 const PROGMEM op_node op_node_00xx={0x0080u, {
 	NODE(op_node_00yy),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 }};
 
 const PROGMEM op_node op_node_03xx={0x0088u, {
@@ -175,7 +131,7 @@ const PROGMEM op_node op_node_f8_real={0x0600u, {
 
 const PROGMEM op_node op_node_f8={0x0008u, {
 	NODE(op_node_f8_real),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 }};
 
 const PROGMEM op_node op_node_fxxx={0x0800u, {
@@ -187,15 +143,15 @@ const PROGMEM op_node op_node_misc1={0x000f, {
 	LEAF(STRING_LDS,  OP_R5_K16_CHR),
 	LEAF(STRING_LD,   OP_R5_Y_P_CHR),
 	LEAF(STRING_LD,   OP_R5_Y_P_CHR),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 	LEAF(STRING_LPM,  OP_R5_CHR),
 	LEAF(STRING_LPM,  OP_R5_CHR),
 	LEAF(STRING_ELPM, OP_R5_CHR),
 	LEAF(STRING_ELPM, OP_R5_CHR),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 	LEAF(STRING_LD,   OP_R5_Y_P_CHR),
 	LEAF(STRING_LD,   OP_R5_Y_P_CHR),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 	LEAF(STRING_LD,   OP_R5_Y_P_CHR),
 	LEAF(STRING_LD,   OP_R5_Y_P_CHR),
 	LEAF(STRING_LD,   OP_R5_Y_P_CHR),
@@ -206,15 +162,15 @@ const PROGMEM op_node op_node_misc2={0x000f, {
 	LEAF(STRING_STS,  OP_R5_K16_CHR),
 	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
 	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 	LEAF(STRING_XCH_Z_COMMA, OP_R5_CHR),
 	LEAF(STRING_LAS_Z_COMMA, OP_R5_CHR),
 	LEAF(STRING_LAC_Z_COMMA, OP_R5_CHR),
 	LEAF(STRING_LAT_Z_COMMA, OP_R5_CHR),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
 	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
 	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
 	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
@@ -240,16 +196,16 @@ const PROGMEM op_node op_node_misc_9x8x={0x01f0, {
 	LEAF(STRING_CLI,  OP_CONST_CHR),
 	LEAF(STRING_RET,  OP_CONST_CHR),
 	LEAF(STRING_RETI, OP_CONST_CHR),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 	LEAF(STRING_SLEEP, OP_CONST_CHR),
 	LEAF(STRING_BREAK, OP_CONST_CHR),
 	LEAF(STRING_WDR,   OP_CONST_CHR),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 	LEAF(STRING_LPM,  OP_CONST_CHR),
 	LEAF(STRING_ELPM, OP_CONST_CHR),
 	LEAF(STRING_SPM,  OP_CONST_CHR),
@@ -265,22 +221,22 @@ const PROGMEM op_node op_node_misc_9x9x_c={0x0110, {
 
 const PROGMEM op_node op_node_misc_9x9x_b={0x0020, {
 	NODE(op_node_misc_9x9x_c),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 }};
 
 const PROGMEM op_node op_node_misc_9x9x_a={0x0040, {
 	NODE(op_node_misc_9x9x_b),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 }};
 
 const PROGMEM op_node op_node_misc_9x9x={0x0080, {
 	NODE(op_node_misc_9x9x_a),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 }};
 
 const PROGMEM op_node op_node_misc_9xbx={0x0100, {
 	LEAF(STRING_DES, OP_K4_CHR),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 }};
 
 const PROGMEM op_node op_node_misc3={0x000f, {
@@ -288,7 +244,7 @@ const PROGMEM op_node op_node_misc3={0x000f, {
 	LEAF(STRING_NEG,  OP_R5_CHR),
 	LEAF(STRING_SWAP, OP_R5_CHR),
 	LEAF(STRING_INC,  OP_R5_CHR),
-	LEAF(STRING_RESERVED_2, OP_CONST_CHR),
+	LEAF(STRING_RESERVED, OP_CONST_CHR),
 	LEAF(STRING_ASR,  OP_R5_CHR),
 	LEAF(STRING_LSR,  OP_R5_CHR),
 	LEAF(STRING_ROR,  OP_R5_CHR),
@@ -419,7 +375,6 @@ void append_separator(){
 }
 
 void decode(uint16_t op, uint16_t next){
-	reset();
 	const op_node* node=&op_node_root;
 	uint8_t op_type;
 	while(1){
@@ -437,10 +392,7 @@ void decode(uint16_t op, uint16_t next){
 		intptr_t what=pgm_word(&node->next[bits]);
 		if(IS_LEAF(what)){
 			uint8_t str_index=NAME_FROM_IP(what);
-			char* name=op_name_table[str_index];
-			while(*name){
-				append(*name++);
-			}
+			load_string(str_index);
 			op_type=OP_TYPE_FROM_IP(what);
 			break;
 		}
