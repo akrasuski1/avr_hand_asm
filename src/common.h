@@ -38,6 +38,12 @@
 #define OP_K4_CHR 16
 // xxxx xxxx kkkk xxxx <k>
 
+// These are equivalent to above, but used for optimizing switches.
+// We have 32 values to use - plenty to spare.
+#define OP_R5_Y_P_ST_CHR  17
+#define OP_R5_K16_STS_CHR 18
+#define OP_R5_LPM_CHR     19
+
 #define MAGIC_LEN_EOF 10
 #define MAGIC_LEN_RESERVED 9
 #define MAGIC_LEN_7B_NULL_TERMINATED 8

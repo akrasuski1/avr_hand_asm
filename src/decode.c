@@ -17,10 +17,6 @@ typedef struct op_node{
 #define OP_TYPE_FROM_IP(ip) ((ip>>10)&0x1f)
 #define IS_LEAF(ip) (ip&LEAFFLAG)
 
-#define OP_R5_Y_P_ST_CHR  17
-#define OP_R5_K16_STS_CHR 18
-#define OP_R5_LPM_CHR     19
-
 // These eight nodes are disambiguating nop from 255 surrounding reserved ops.
 const PROGMEM op_node op_node_000w={0x0001u, {
 	LEAF(STRING_NOP,      OP_CONST_CHR),
