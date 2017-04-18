@@ -25,7 +25,7 @@ void print_buffer(){
 
 #define MENU_MAGIC_INCREMENT_OPTIONS 0xffu
 static uint8_t menus[]={          /* 1-option menus */
-	STRING_COOL, STRING_CONTINUE, // MENU_SPLASH
+	STRING_COOL_AVR_PROGRAMMER, STRING_CONTINUE, // MENU_SPLASH
 
 	MENU_MAGIC_INCREMENT_OPTIONS, /* 2-option menus */
 

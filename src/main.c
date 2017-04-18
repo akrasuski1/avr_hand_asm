@@ -200,8 +200,8 @@ void menu_move(){
 	if(location!=2){ // Local or remote.
 		flash_eeprom=show_menu(MENU_FLASH_EEPROM);
 	}
-	uint16_t ro=menu_ask16(STRING_READ_OFF);
-	uint16_t wo=menu_ask16(STRING_WRITE_OFF);
+	uint16_t ro=menu_ask16(STRING_READ_OFFSET);
+	uint16_t wo=menu_ask16(STRING_WRITE_OFFSET);
 	uint8_t sure=show_menu(MENU_ARE_YOU_SURE);
 	if(sure==0){ // Yes.
 		switch(location){
@@ -244,7 +244,7 @@ void menu_config(){
 		remote_flash_size=sizes[choice];
 	}
 	else{ // Custom size.
-		remote_flash_size=menu_ask16(STRING_PAGE_SIZE);
+		remote_flash_size=menu_ask16(STRING_PAGE_SIZE_IN_BYTES);
 	}
 }
 

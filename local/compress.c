@@ -39,6 +39,25 @@ void save_file(uint8_t* curbit, uint8_t* all_bits, const char* tablename, const 
 	f=fopen(fn, "w");
 	fprintf(f, "#include \"../progmem_utils.h\"\n");
 	fprintf(f, "extern const uint8_t PROGMEM %s[];\n", tablename);
+	fclose(f);
+}
+
+void make_enum(const char* fname){
+	FILE* f=fopen(fname, "w");
+	fprintf(f, "enum{\n");
+	for(const char** pstr=strings; *pstr; pstr++){
+		fprintf(f, "\tSTRING_");
+		for(const char* str=*pstr; *str; str++){
+			char c=*str;
+			if(c>='a' && c<='z'){ c-=0x20; }
+			if(c>='A' && c<='Z'){ fprintf(f, "%c", c); }
+			else if(c>='0' && c<='9'){ fprintf(f, "%c", c); }
+			else{ fprintf(f, "_"); }
+		}
+		fprintf(f, ",\n");
+	}
+	fprintf(f, "};");
+	fclose(f);
 }
 
 int main(){
@@ -99,4 +118,5 @@ int main(){
 	}
 
 	save_file(strbit, str_bits, "compressed_string_bits", "src/gen/comp_str_bits.c");
+	make_enum("src/gen/strings.h");
 }
