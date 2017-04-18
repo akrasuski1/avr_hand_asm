@@ -45,7 +45,7 @@ int main(){
 	uint8_t str_bits[10000];
 	uint8_t* strbit=str_bits;
 
-	uint8_t prevop[100]={};
+	char prevop[100]={};
 	prevop[0]=0;
 	for(const char** pstr=strings; *pstr; pstr++){
 		const char* str=*pstr;
@@ -89,6 +89,7 @@ int main(){
 				store(&strbit, *c-0x60, 5);
 			}
 		}
+		strcpy(prevop, str);
 		if(type==1){
 			store(&strbit, 0, 5);
 		}
