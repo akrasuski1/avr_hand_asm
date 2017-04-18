@@ -17,6 +17,10 @@ typedef struct op_node{
 #define OP_TYPE_FROM_IP(ip) ((ip>>10)&0x1f)
 #define IS_LEAF(ip) (ip&LEAFFLAG)
 
+#define OP_R5_Y_P_ST_CHR  17
+#define OP_R5_K16_STS_CHR 18
+#define OP_R5_LPM_CHR     19
+
 // These eight nodes are disambiguating nop from 255 surrounding reserved ops.
 const PROGMEM op_node op_node_000w={0x0001u, {
 	LEAF(STRING_NOP,      OP_CONST_CHR),
@@ -144,10 +148,10 @@ const PROGMEM op_node op_node_misc1={0x000f, {
 	LEAF(STRING_LD,   OP_R5_Y_P_CHR),
 	LEAF(STRING_LD,   OP_R5_Y_P_CHR),
 	LEAF(STRING_RESERVED, OP_CONST_CHR),
-	LEAF(STRING_LPM,  OP_R5_CHR),
-	LEAF(STRING_LPM,  OP_R5_CHR),
-	LEAF(STRING_ELPM, OP_R5_CHR),
-	LEAF(STRING_ELPM, OP_R5_CHR),
+	LEAF(STRING_LPM,  OP_R5_LPM_CHR),
+	LEAF(STRING_LPM,  OP_R5_LPM_CHR),
+	LEAF(STRING_ELPM, OP_R5_LPM_CHR),
+	LEAF(STRING_ELPM, OP_R5_LPM_CHR),
 	LEAF(STRING_RESERVED, OP_CONST_CHR),
 	LEAF(STRING_LD,   OP_R5_Y_P_CHR),
 	LEAF(STRING_LD,   OP_R5_Y_P_CHR),
@@ -159,21 +163,21 @@ const PROGMEM op_node op_node_misc1={0x000f, {
 }};
 
 const PROGMEM op_node op_node_misc2={0x000f, {
-	LEAF(STRING_STS,  OP_R5_K16_CHR),
-	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
-	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
+	LEAF(STRING_STS,  OP_R5_K16_STS_CHR),
+	LEAF(STRING_ST,   OP_R5_Y_P_ST_CHR),
+	LEAF(STRING_ST,   OP_R5_Y_P_ST_CHR),
 	LEAF(STRING_RESERVED, OP_CONST_CHR),
 	LEAF(STRING_XCH_Z_COMMA, OP_R5_CHR),
 	LEAF(STRING_LAS_Z_COMMA, OP_R5_CHR),
 	LEAF(STRING_LAC_Z_COMMA, OP_R5_CHR),
 	LEAF(STRING_LAT_Z_COMMA, OP_R5_CHR),
 	LEAF(STRING_RESERVED, OP_CONST_CHR),
-	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
-	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
+	LEAF(STRING_ST,   OP_R5_Y_P_ST_CHR),
+	LEAF(STRING_ST,   OP_R5_Y_P_ST_CHR),
 	LEAF(STRING_RESERVED, OP_CONST_CHR),
-	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
-	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
-	LEAF(STRING_ST,   OP_R5_Y_P_CHR),
+	LEAF(STRING_ST,   OP_R5_Y_P_ST_CHR),
+	LEAF(STRING_ST,   OP_R5_Y_P_ST_CHR),
+	LEAF(STRING_ST,   OP_R5_Y_P_ST_CHR),
 	LEAF(STRING_PUSH, OP_R5_CHR),
 }};
 
@@ -400,6 +404,9 @@ void decode(uint16_t op, uint16_t next){
 			node=(op_node*)what;
 		}
 	}
+	if(op_type!=OP_CONST_CHR){
+		append(' ');
+	}
 
 	uint8_t dreg=(op>>4)&0x1f;
 	uint8_t reg=(op&0xf)|((op&0x0200u)>>5);
@@ -407,44 +414,38 @@ void decode(uint16_t op, uint16_t next){
 	uint8_t p=(op&3u);
 	uint8_t q=(op&7)|((op&0x0c00u)>>7)|((op&0x2000u)>>8);
 	uint8_t yz=((op>>3)&1);
-	uint16_t k=op&0xfff;
 	uint8_t io=(op&0xf)|((op>>5)&0x30);
+	uint16_t k=op&0xfff;
 
-	if(op_type!=OP_CONST_CHR){
-		append(' ');
-	}
 	switch(op_type){
 		case OP_R5_Y_P_CHR:
 		{
-			if(op&0x0200u){ // st
-				append_mxp(p, xyz);
-				append_separator();
-				append_register(dreg);
-			}
-			else{ // ld
-				append_register(dreg);
-				append_separator();
-				append_mxp(p, xyz);
-			}
+			append_register(dreg);
+			append_separator();
+			append_mxp(p, xyz);
+		} break;
+		case OP_R5_Y_P_ST_CHR:
+		{
+			append_mxp(p, xyz);
+			append_separator();
+			append_register(dreg);
 		} break;
 		case OP_R5_K16_CHR:
 		{
-			if(op&0x0200){ // sts
-				append_hex16(next);
-				append_separator();
-				append_register(dreg);
-			}
-			else{ // lds
-				append_register(dreg);
-				append_separator();
-				append_hex16(next);
-			}
+			append_register(dreg);
+			append_separator();
+			append_hex16(next);
+		} break;
+		case OP_R5_K16_STS_CHR:
+		{
+			append_hex16(next);
+			append_separator();
+			append_register(dreg);
 		} break;
 		case OP_Q_R5_CHR:
 		{
 			if(q){
-				buf--;
-				append('d');
+				buf[-1]='d';
 				append(' ');
 			}
 			if(op&0x0200u){ // st
@@ -495,10 +496,12 @@ void decode(uint16_t op, uint16_t next){
 		case OP_R5_CHR:
 		{
 			append_register(dreg);
-			if((op&0xfe0cu)==0x9004u){ // lpm/elpm Z(+)
-				append_separator();
-				append_mxp(op&1, 0);
-			}
+		} break;
+		case OP_R5_LPM_CHR:
+		{
+			append_register(dreg);
+			append_separator();
+			append_mxp(op&1, 0);
 		} break;
 		case OP_R5_B_CHR:
 		{
