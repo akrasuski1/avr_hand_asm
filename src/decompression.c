@@ -50,7 +50,6 @@ uint8_t next_string(bit_state* bs){
 }
 
 void load_string(uint8_t id){
-	reset();
 	bit_state bs;
 	bs.ptr=compressed_string_bits;
 	bs.curbit=0;

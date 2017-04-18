@@ -12,8 +12,6 @@ uint16_t remote_flash_size=128u;
 uint16_t edit_addr;
 uint16_t program[256];
 
-#include "gen/comp_op_bits.h"
-#include "gen/comp_name_bits.h"
 void cheat_sheet(uint16_t* store_location){
 	(void)store_location;
 	/*
