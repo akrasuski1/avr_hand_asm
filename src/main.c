@@ -13,74 +13,93 @@ uint16_t remote_flash_size=128u;
 uint16_t edit_addr;
 uint16_t program[256];
 
+#include "op_tree.h"
+#include <stdio.h>
+
+#define WALK_NONE  0
+#define WALK_RIGHT 1
+#define WALK_LEFT  2
+
+// More than op tree depth.
+#define STACK_SIZE 15
+uintptr_t op_node_stack[STACK_SIZE];
+uint8_t walk(uint16_t curmask, uintptr_t node, uint8_t where){
+	if(IS_LEAF(node)){
+		uint8_t name=NAME_FROM_IP(node);
+		if(name==STRING_RESERVED){ return where; }
+		else{
+			decode(curmask, 0);
+			print_buffer();
+			printf("\n");
+			while(1){
+				uint8_t ui=poll_user_input();
+				switch(ui){
+				case A_LEFT:
+				{
+					return WALK_LEFT;
+				} break;
+				case A_RIGHT:
+				{
+					return WALK_RIGHT;
+				} break;
+				case A_PRESS:
+				{
+					return WALK_NONE;
+				}
+				default:
+				{
+					pc_delay();
+					continue;
+				} break;
+				}
+			}
+		}
+	}
+	const op_node* n=(const op_node*) node;
+	uint8_t bits=1;
+	uint16_t mask=n->switchmask;
+	while(mask){
+		if(mask&1){
+			bits<<=1;
+		}
+		mask>>=1;
+	}
+	mask=n->switchmask;
+	uint8_t i=0;
+	if(where==WALK_LEFT){
+		i=bits-1;
+	}
+	while(1){
+		uint16_t cmask=curmask;
+		uint8_t k=i;
+		for(uint8_t j=0; j<16; j++){
+			if((1<<j)&mask){
+				if(k&1){
+					cmask|=1<<j;
+				}
+				k>>=1;
+			}
+		}
+		where=walk(cmask, n->next[i], where);
+		if(where==WALK_NONE){ return WALK_NONE; }
+		else if(where==WALK_LEFT){
+			if(i--==0){ return WALK_LEFT; }
+		}
+		else{
+			if(++i==bits){
+				return WALK_RIGHT;
+			}
+		}
+	}
+	return where;
+}
+
 void cheat_sheet(uint16_t* store_location){
 	(void)store_location;
-	/*
-	uint8_t index=0;
-	while(1){
-		compressed_ops_names bs;
-		init_ops_names(&bs);
-
-		uint8_t op_type;
-		uint16_t op;
-		uint8_t i=index;
-		do {
-			next_string(&bs.compressed_op_names);
-			uint16_t mask=type_masks[op_type];
-			op=get_op_mask(&bs.compressed_op_bs, mask);
-		} while(i--);
-		select_display_line(0);
-		decode(op, 0);
-		print_buffer();
-		select_display_line(1);
-		reset();
-		uint16_t mask=type_masks[op_type];
-		for(uint8_t bit=0; bit<16u; bit++){
-			if(mask&0x8000u){
-				if(op&0x8000u){
-					append('1');
-				}
-				else{
-					append('0');
-				}
-			}
-			else{
-				append('*');
-			}
-			if((bit&3)==3){
-				append(' ');
-			}
-			op<<=1;
-			mask<<=1;
-		}
-		print_buffer();
-		uint8_t ui=poll_user_input();
-		switch(ui){
-		case A_LEFT: 
-		case A_RIGHT:
-		{
-			index+=(ui-A_LEFT)*2-1;
-		} break;
-		case B_LEFT: 
-		case B_RIGHT:
-		{
-			index+=((ui-B_LEFT)*2-1)*8;
-		} break;
-		case B_PRESS:
-			*store_location=op;
-			// Fallthrough.
-		case A_PRESS:
-			return;
-		default:
-		{
-			pc_delay();
-		} break;
-		}
-		// Modulo.
-		index+=OP_NAMES_NUM;
-		if(index>=OP_NAMES_NUM){ index-=OP_NAMES_NUM; }
-	}
-	*/
+	uint8_t where=WALK_RIGHT;
+	do {
+		where=walk(0, (uintptr_t)&op_node_root, where);
+	} while(where!=WALK_NONE);
 }
 
 void do_edit(){
@@ -263,7 +282,7 @@ void main_menu(){
 
 #include "hd44780.h"
 int main(){
-#ifdef __AVR__
+/*#ifdef __AVR__
 	lcd_init();
 	for(uint16_t i=0; ; i++){
 		decode(i, 0);
@@ -281,7 +300,8 @@ int main(){
 			lcd_putc('0'+(i%10)/1);
 		}
 	}
-#endif
-	show_menu(MENU_SPLASH);
-	main_menu();
+#endif*/
+	cheat_sheet(0);
+	//show_menu(MENU_SPLASH);
+	//main_menu();
 }
