@@ -15,7 +15,7 @@ cd ..
 diff <(bin/disas_test | nl) <(nl local/avr_as)
 
 cd src
-gcc $SRC $MAIN -o ../bin/disas
+gcc $SRC $MAIN -o ../bin/disas -g
 cd ..
 
 cd src

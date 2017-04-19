@@ -88,7 +88,7 @@ const PROGMEM op_node op_node_bxxx={0x0800u, {
 	LEAF(STRING_OUT, OP_IO_R5_CHR),
 }};
 
-const PROGMEM op_node op_node_f0={0x0c07u, {
+const PROGMEM op_node op_node_f0={0x0407u, {
 	LEAF(STRING_BRCS, OP_K7_CHR),
 	LEAF(STRING_BREQ, OP_K7_CHR),
 	LEAF(STRING_BRMI, OP_K7_CHR),
