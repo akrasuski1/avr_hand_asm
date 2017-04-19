@@ -261,7 +261,27 @@ void main_menu(){
 	}
 }
 
+#include "hd44780.h"
 int main(){
+#ifdef __AVR__
+	lcd_init();
+	for(uint16_t i=0; ; i++){
+		decode(i, 0);
+		for(uint8_t* b=buffer; b!=buf; b++){
+			if(*b==255){ while(1); }
+			//lcd_putc(*b);
+		}
+
+		if(i%10==0){
+			lcd_xy(1, 0);
+			lcd_putc('0'+i/10000);
+			lcd_putc('0'+(i%10000)/1000);
+			lcd_putc('0'+(i%1000)/100);
+			lcd_putc('0'+(i%100)/10);
+			lcd_putc('0'+(i%10)/1);
+		}
+	}
+#endif
 	show_menu(MENU_SPLASH);
 	main_menu();
 }
