@@ -24,7 +24,7 @@ void lcd_byte(uint8_t byte){
 		byte = ((uint8_t)(byte<<4)) | ((uint8_t)(byte>>4));
 		_delay_us(80-2); 
 	}
-	// Normally 40us of delay aat the end of function would be plenty, but to 
+	// Normally 40us of delay at the end of function would be plenty, but to 
 	// save space, same function is used elsewhere when timing is longer.
 }
 
