@@ -5,7 +5,7 @@
 #include "../src/common.h"
 #include "full_tables.h"
 
-#define PARTITION_SIZE 16
+#define PARTITION_SIZE 8
 
 void print_all(uint8_t* from, uint8_t* to, FILE* f){
 	for(int i=0; i<(to-from); i+=8){
