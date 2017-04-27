@@ -43,6 +43,10 @@ void blink_cursor(uint8_t pos){
 		put_character(' ');
 	}
 	put_character('^');
+	for(int i=0; i<32; i++){
+		put_character(' ');
+	}
+	put_character('\n');
 }
 void start_timer(timer* t){
 	gettimeofday(t, NULL);
