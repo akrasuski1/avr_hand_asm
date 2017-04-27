@@ -5,20 +5,17 @@
 #include <unistd.h>
 #include <poll.h>
 #include <sys/time.h>
-void select_display_line(uint8_t line){
-	if(line==0){ 
-		for(int i=0; i<100; i++){
-		   	printf("\n"); 
-		}
-		for(int i=0; i<20; i++){
-			printf("-");
-		}
-		printf("\n");
+
+void select_display_line(uint8_t ln){
+	if(ln==0){
+		printf("\e[2J");
 	}
-	else{ printf("\n"); }
+	printf("\e[%d;1H", ln+1);
+	fflush(stdout);
 }
 void put_character(uint8_t c){
-	printf("%c", c); fflush(stdout);
+	printf("%c", c);
+   	fflush(stdout);
 }
 uint8_t poll_user_input(){
 	while(1){
