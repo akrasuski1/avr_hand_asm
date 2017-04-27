@@ -28,8 +28,8 @@ void walk(uint16_t* ptr, uint8_t category){
 	// This function is basically dfs with possibility to move sideways between
 	// leaves, but rewritten into iterative form.
 	typedef struct stack_entry{
-		uintptr_t node;
 		uint8_t i;
+		uintptr_t node;
 	} stack_entry;
 	static stack_entry stack[STACK_SIZE];
 	stack_entry* sp=stack-1;
@@ -112,9 +112,6 @@ void cheat_sheet(uint16_t* store_location){
 }
 
 void do_edit(){
-	for(uint8_t i=0; i<254u; i++){
-		program[i]=(i<<8)|i;
-	}
 	uint8_t edit_mode=0;
 	uint8_t position=0;
 	while(1){
@@ -255,6 +252,9 @@ void main_menu(){
 
 #include "hd44780.h"
 int main(){
+	for(uint8_t i=0; i<254u; i++){
+		program[i]=(i<<8)|i;
+	}
 /*#ifdef __AVR__
 	lcd_init();
 	for(uint16_t i=0; ; i++){
@@ -274,7 +274,6 @@ int main(){
 		}
 	}
 #endif*/
-	do_edit();
-	//show_menu(MENU_SPLASH);
-	//main_menu();
+	show_menu(MENU_SPLASH);
+	main_menu();
 }
