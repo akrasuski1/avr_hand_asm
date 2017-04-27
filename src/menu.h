@@ -17,6 +17,7 @@ enum {
 typedef struct update_menu16_arg {
 	uint16_t val;
 	uint8_t position;
+	uint8_t startfrom;
 } update_menu16_arg;
 
 uint8_t update_menu16(update_menu16_arg* arg);

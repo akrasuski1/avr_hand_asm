@@ -102,12 +102,10 @@ uint8_t show_menu(uint8_t menu_index){
 
 uint8_t update_menu16(update_menu16_arg* arg){
 	select_display_line(1);
-	reset();
-	append('0');
-	append('x');
-	uint16_t ch=arg->val;
 	uint8_t selected_nibble=0;
+	uint16_t ch=arg->val;
 	uint8_t pos=arg->position;
+	buf=buffer+arg->startfrom;
 	for(uint8_t i=3; i!=0xffu; i--){
 		uint8_t nib=(ch>>12)&0xf;
 		ch<<=4;
@@ -117,10 +115,11 @@ uint8_t update_menu16(update_menu16_arg* arg){
 		append_hexnibble(nib); 
 	}
 	print_buffer();
-	blink_cursor(5-pos);
-	uint16_t p=1u<<(pos*4);
-	uint8_t ui=poll_user_input();
+	blink_cursor(3+arg->startfrom-pos);
 	uint16_t op=arg->val;
+	uint16_t p=1u<<(pos*4);
+	uint16_t p2=p<<4;
+	uint8_t ui=poll_user_input();
 	switch(ui){
 	case A_LEFT:  { pos++; } break;
 	case A_RIGHT: { pos--; } break;
@@ -128,14 +127,14 @@ uint8_t update_menu16(update_menu16_arg* arg){
 	{
 		op-=p;
 		if(selected_nibble==0){
-			op+=p<<4;
+			op+=p2;
 		}
 	} break;
 	case B_RIGHT:
 	{
 		op+=p;
 		if(selected_nibble==0xf){
-			op-=p<<4;
+			op-=p2;
 		}
 	} break;
 	default: return ui;
@@ -149,10 +148,14 @@ uint16_t menu_ask16(uint8_t id){
 	update_menu16_arg arg;
 	arg.val=0;
 	arg.position=0;
+	arg.startfrom=2;
 	select_display_line(0);
 	load_string(id);
 	uppercase_buffer();
 	print_buffer();
+	reset();
+	append('0');
+	append('x');
 	while(1){
 		uint8_t ui=update_menu16(&arg);
 		switch(ui){

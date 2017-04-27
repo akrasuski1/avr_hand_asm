@@ -116,6 +116,7 @@ void do_edit(){
 	uint8_t edit_mode=0;
 	update_menu16_arg arg;
 	arg.position=0;
+	arg.startfrom=6;
 	while(1){
 		arg.val=program[edit_addr];
 		uint16_t next=program[edit_addr+1];
@@ -132,12 +133,10 @@ void do_edit(){
 		append(':');
 		append(' ');
 		append_hexbyte(arg.val>>8);
-		append(' ');
 		append_hexbyte(arg.val);
 		append(' ');
 		append('[');
 		append_hexbyte(next>>8);
-		append(' ');
 		append_hexbyte(next);
 		append(']');
 		print_buffer();
