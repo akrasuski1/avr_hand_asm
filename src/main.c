@@ -31,7 +31,7 @@ void walk(uint16_t* ptr, uint8_t category){
 		uint8_t i;
 		uintptr_t node;
 	} stack_entry;
-	static stack_entry stack[STACK_SIZE];
+	stack_entry stack[STACK_SIZE];
 	stack_entry* sp=stack-1;
 	int8_t where=WALK_RIGHT;
 	uint16_t cmask=0;
