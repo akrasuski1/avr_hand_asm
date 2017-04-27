@@ -16,90 +16,96 @@ uint16_t program[256];
 #include "op_tree.h"
 #include <stdio.h>
 
-#define WALK_NONE  0
-#define WALK_RIGHT 1
-#define WALK_LEFT  2
+#define WALK_RIGHT  1
+#define WALK_NONE   0
+#define WALK_LEFT (-1)
+
+#define IP_MAGIC 0xfeu
 
 // More than op tree depth.
 #define STACK_SIZE 15
-uintptr_t op_node_stack[STACK_SIZE];
-uint8_t walk(uint16_t curmask, uintptr_t node, uint8_t where){
-	if(IS_LEAF(node)){
-		uint8_t name=NAME_FROM_IP(node);
-		if(name==STRING_RESERVED){ return where; }
-		else{
-			decode(curmask, 0);
-			print_buffer();
-			printf("\n");
-			while(1){
-				uint8_t ui=poll_user_input();
-				switch(ui){
-				case A_LEFT:
-				{
-					return WALK_LEFT;
-				} break;
-				case A_RIGHT:
-				{
-					return WALK_RIGHT;
-				} break;
-				case A_PRESS:
-				{
-					return WALK_NONE;
-				}
-				default:
-				{
-					pc_delay();
-					continue;
-				} break;
+#define POP() sp--; continue
+void walk(){
+	typedef struct stack_entry{
+		uintptr_t node;
+		uint8_t i;
+	} stack_entry;
+
+	static stack_entry stack[STACK_SIZE];
+	stack_entry* sp=stack-1;
+	int8_t where=WALK_RIGHT;
+	uint16_t cmask=0;
+
+	while(where!=WALK_NONE){
+		// Wraparound around tree root.
+		if(sp==stack-1){
+			sp++;
+			sp->node=(long long)&op_node_root;
+			sp->i=IP_MAGIC;
+		}
+		uintptr_t node=sp->node;
+		if(IS_LEAF(node)){
+			uint8_t name=NAME_FROM_IP(node);
+			if(name==STRING_RESERVED){ /* Ignore node */ }
+			else{
+				decode(cmask, 0);
+				//load_string(NAME_FROM_IP(node));
+				print_buffer();
+				printf("\n");
+				while(1){
+					uint8_t ui=poll_user_input();
+					switch(ui){
+					case A_LEFT:  where=WALK_LEFT;  break;
+					case A_RIGHT: where=WALK_RIGHT; break;
+					case A_PRESS: where=WALK_NONE;  break;
+					default:      pc_delay();       continue;
+					}
+					break;
 				}
 			}
+			POP();
 		}
-	}
-	const op_node* n=(const op_node*) node;
-	uint8_t bits=1;
-	uint16_t mask=n->switchmask;
-	while(mask){
-		if(mask&1){
-			bits<<=1;
+		const op_node* n=(const op_node*)(long long)node;
+		uint8_t bits=1;
+		uint16_t mask=n->switchmask;
+		uint8_t j=16;
+		do {
+			if(mask&1){
+				bits<<=1;
+			}
+			mask>>=1;
+		} while(j--);
+		uint8_t i=sp->i;
+		if(i==IP_MAGIC){
+			i=0xffu;
+			if(where==WALK_LEFT){
+				i=bits;
+			}
 		}
-		mask>>=1;
-	}
-	mask=n->switchmask;
-	uint8_t i=0;
-	if(where==WALK_LEFT){
-		i=bits-1;
-	}
-	while(1){
-		uint16_t cmask=curmask;
+		i+=where;
+		if(i==0xffu || i==bits){ POP(); }
+		mask=n->switchmask;
+		cmask&=~mask;
 		uint8_t k=i;
-		for(uint8_t j=0; j<16; j++){
-			if((1<<j)&mask){
+		for(uint16_t j=1; j; j<<=1){
+			if(j&mask){
 				if(k&1){
-					cmask|=1<<j;
+					cmask|=j;
 				}
 				k>>=1;
 			}
 		}
-		where=walk(cmask, n->next[i], where);
-		if(where==WALK_NONE){ return WALK_NONE; }
-		else if(where==WALK_LEFT){
-			if(i--==0){ return WALK_LEFT; }
-		}
-		else{
-			if(++i==bits){
-				return WALK_RIGHT;
-			}
-		}
+		//printf("  N: %p, i: %u, bits=%d, where=%d\n", (void*)(long long)node, *ip, bits, where);
+		sp->i=i;
+		sp++;
+		sp->node=n->next[i];
+		sp->i=IP_MAGIC;
 	}
-	return where;
 }
 
 void cheat_sheet(uint16_t* store_location){
 	(void)store_location;
-	uint8_t where=WALK_RIGHT;
-	do {
-		where=walk(0, (uintptr_t)&op_node_root, where);
-	} while(where!=WALK_NONE);
+	walk();
 }
 
 void do_edit(){
