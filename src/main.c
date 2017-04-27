@@ -114,11 +114,15 @@ void cheat_sheet(uint16_t* store_location){
 
 void do_edit(){
 	uint8_t edit_mode=0;
-	uint8_t position=0;
+	update_menu16_arg arg;
+	arg.position=0;
 	while(1){
-		uint16_t op=program[edit_addr];
+		arg.val=program[edit_addr];
 		uint16_t next=program[edit_addr+1];
 		select_display_line(0);
+		decode(arg.val, next);
+		print_buffer();
+		select_display_line(1);
 		reset();
 		{
 			uint16_t twice=2*edit_addr;
@@ -127,9 +131,9 @@ void do_edit(){
 		}
 		append(':');
 		append(' ');
-		append_hexbyte(op>>8);
+		append_hexbyte(arg.val>>8);
 		append(' ');
-		append_hexbyte(op);
+		append_hexbyte(arg.val);
 		append(' ');
 		append('[');
 		append_hexbyte(next>>8);
@@ -137,39 +141,17 @@ void do_edit(){
 		append_hexbyte(next);
 		append(']');
 		print_buffer();
-		select_display_line(1);
-		decode(op, next);
-		print_buffer();
-		uint8_t ui=poll_user_input();
 		if(edit_mode){
-			blink_cursor(((position<2)?10:9)-position);
-			uint8_t raw_nibble=(op>>(4*position))&0xfu;
-			uint16_t add=1u<<(4*position);
+			uint8_t ui=update_menu16(&arg);
 			switch(ui){
-			case A_LEFT:  { position++;       } break;
-			case A_RIGHT: { position--;       } break;
 			case B_PRESS: { edit_mode=0;      } break;
-			case A_PRESS: { cheat_sheet(&op); } break;
-			case B_LEFT:
-			{
-				op-=add;
-				if(raw_nibble==0){
-					op+=add<<4;
-				}
-			} break;
-			case B_RIGHT:
-			{
-				op+=add;
-				if(raw_nibble==0xf){
-					op-=add<<4;
-				}
-			} break;
-			default: { pc_delay(); } break;
+			case A_PRESS: { cheat_sheet(&arg.val); } break;
+			default:      { pc_delay();       } break;
 			}
-			position&=3;
-			program[edit_addr]=op;
+			program[edit_addr]=arg.val;
 		}
 		else{
+			uint8_t ui=poll_user_input();
 			switch(ui){
 			case A_LEFT:  { edit_addr--;  } break;
 			case A_RIGHT: { edit_addr++;  } break;
