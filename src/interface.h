@@ -3,13 +3,13 @@
 
 #include <stdint.h>
 
-#define A_LEFT  1
-#define A_RIGHT 2
-#define A_PRESS 3
+#define A_LEFT  1 // Move left.
+#define A_RIGHT 2 // Move right.
+#define A_PRESS 3 // Select.
 
-#define B_LEFT  4
-#define B_RIGHT 5
-#define B_PRESS 6
+#define B_LEFT  4 // Alternative left.
+#define B_RIGHT 5 // Alternative right.
+#define B_PRESS 6 // Back.
 
 #ifndef __AVR__
 #include <sys/time.h>

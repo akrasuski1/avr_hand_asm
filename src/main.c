@@ -40,7 +40,7 @@ void walk(){
 		// Wraparound around tree root.
 		if(sp==stack-1){
 			sp++;
-			sp->node=(long long)&op_node_root;
+			sp->node=NODE(op_node_root);
 			sp->i=IP_MAGIC;
 		}
 		uintptr_t node=sp->node;
@@ -65,7 +65,7 @@ void walk(){
 			}
 			POP();
 		}
-		const op_node* n=(const op_node*)(long long)node;
+		const op_node* n=(const op_node*)NODE(node);
 		uint8_t bits=1;
 		uint16_t mask=n->switchmask;
 		uint8_t j=16;

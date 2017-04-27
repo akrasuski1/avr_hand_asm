@@ -10,12 +10,8 @@ typedef struct op_node{
 	uintptr_t next[];
 } op_node;
 
-#if __AVR__
-#define LEAFFLAG 0x8000u
-#else
+// On AVR, 0x8000. Code assumes this is after all flash.
 #define LEAFFLAG (1ull<<(sizeof(uintptr_t)*8-1))
-#endif
-
 #define LEAF(name, op_type) ((name) | (op_type<<10) | LEAFFLAG)
 #define NODE(node) ((intptr_t)&node)
 #define NAME_FROM_IP(ip) (ip&0xff)
