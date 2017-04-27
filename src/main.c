@@ -83,13 +83,13 @@ void walk(uint16_t* ptr, uint8_t category){
 				i=bits;
 			}
 		}
+		mask=n->switchmask;
+		cmask&=~mask;
 		i+=where;
 		if(i==0xffu || i==bits){
 			sp--;
 			continue;
 		}
-		mask=n->switchmask;
-		cmask&=~mask;
 		uint8_t k=i;
 		for(uint16_t j=1; j; j<<=1){
 			if(j&mask){
