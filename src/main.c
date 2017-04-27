@@ -24,21 +24,21 @@ uint16_t program[256];
 
 // More than op tree depth.
 #define STACK_SIZE 15
-#define POP() sp--; continue
-void walk(){
+void walk(uint16_t* ptr){
+	// This function is basically dfs with possibility to move sideways between
+	// leaves, but rewritten into iterative form.
 	typedef struct stack_entry{
 		uintptr_t node;
 		uint8_t i;
 	} stack_entry;
-
 	static stack_entry stack[STACK_SIZE];
 	stack_entry* sp=stack-1;
 	int8_t where=WALK_RIGHT;
 	uint16_t cmask=0;
 
 	while(where!=WALK_NONE){
-		// Wraparound around tree root.
 		if(sp==stack-1){
+			// We reached stack bottom, so we wrap around tree root.
 			sp++;
 			sp->node=NODE(op_node_root);
 			sp->i=IP_MAGIC;
@@ -49,23 +49,23 @@ void walk(){
 			if(name==STRING_RESERVED){ /* Ignore node */ }
 			else{
 				decode(cmask, 0);
-				//load_string(NAME_FROM_IP(node));
 				print_buffer();
-				printf("\n");
 				while(1){
 					uint8_t ui=poll_user_input();
 					switch(ui){
-					case A_LEFT:  where=WALK_LEFT;  break;
-					case A_RIGHT: where=WALK_RIGHT; break;
-					case A_PRESS: where=WALK_NONE;  break;
+					case A_LEFT:  where=WALK_LEFT;  break;  // opcode--
+					case A_RIGHT: where=WALK_RIGHT; break;  // opcode++
+					case B_PRESS: where=WALK_NONE;  break;  // exit cheat sheet
+					case A_PRESS: *ptr=cmask;       return; // select opcode
 					default:      pc_delay();       continue;
 					}
 					break;
 				}
 			}
-			POP();
+			sp--;
+			continue;
 		}
-		const op_node* n=(const op_node*)NODE(node);
+		op_node* n=(op_node*)node;
 		uint8_t bits=1;
 		uint16_t mask=n->switchmask;
 		uint8_t j=16;
@@ -83,7 +83,10 @@ void walk(){
 			}
 		}
 		i+=where;
-		if(i==0xffu || i==bits){ POP(); }
+		if(i==0xffu || i==bits){
+			sp--;
+			continue;
+		}
 		mask=n->switchmask;
 		cmask&=~mask;
 		uint8_t k=i;
@@ -95,7 +98,6 @@ void walk(){
 				k>>=1;
 			}
 		}
-		//printf("  N: %p, i: %u, bits=%d, where=%d\n", (void*)(long long)node, *ip, bits, where);
 		sp->i=i;
 		sp++;
 		sp->node=n->next[i];
@@ -104,8 +106,7 @@ void walk(){
 }
 
 void cheat_sheet(uint16_t* store_location){
-	(void)store_location;
-	walk();
+	walk(store_location);
 }
 
 void do_edit(){
@@ -145,14 +146,10 @@ void do_edit(){
 			uint8_t raw_nibble=(op>>(4*position))&0xfu;
 			uint16_t add=1u<<(4*position);
 			switch(ui){
-			case A_LEFT: 
-			{
-				position++;
-			} break;
-			case A_RIGHT:
-			{
-				position--;
-			} break;
+			case A_LEFT:  { position++;       } break;
+			case A_RIGHT: { position--;       } break;
+			case B_PRESS: { edit_mode=0;      } break;
+			case A_PRESS: { cheat_sheet(&op); } break;
 			case B_LEFT:
 			{
 				op-=add;
@@ -167,52 +164,20 @@ void do_edit(){
 					op-=add<<4;
 				}
 			} break;
-			case A_PRESS:
-			{
-				edit_mode=0;
-			} break;
-			case B_PRESS:
-			{
-				cheat_sheet(&op);
-			} break;
-			default:
-			{
-				pc_delay();
-			} break;
+			default: { pc_delay(); } break;
 			}
 			position&=3;
 			program[edit_addr]=op;
 		}
 		else{
 			switch(ui){
-			case A_LEFT: 
-			{
-				edit_addr--;
-			} break;
-			case A_RIGHT:
-			{
-				edit_addr++;
-			} break;
-			case B_LEFT:
-			{
-				edit_addr-=8;
-			} break;
-			case B_RIGHT:
-			{
-				edit_addr+=8;
-			} break;
-			case B_PRESS:
-			{
-				edit_mode=1;
-			} break;
-			case A_PRESS:
-			{
-				return;
-			} break;
-			default:
-			{
-				pc_delay();
-			} break;
+			case A_LEFT:  { edit_addr--;  } break;
+			case A_RIGHT: { edit_addr++;  } break;
+			case B_LEFT:  { edit_addr-=8; } break;
+			case B_RIGHT: { edit_addr+=8; } break;
+			case A_PRESS: { edit_mode=1;  } break;
+			case B_PRESS: { return; }
+			default:      { pc_delay();   } break;
 			}
 		}
 	}
@@ -307,7 +272,7 @@ int main(){
 		}
 	}
 #endif*/
-	cheat_sheet(0);
+	do_edit();
 	//show_menu(MENU_SPLASH);
 	//main_menu();
 }
