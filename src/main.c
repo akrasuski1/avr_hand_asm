@@ -49,6 +49,7 @@ void walk(uint16_t* ptr, uint8_t category){
 			if(name==STRING_RESERVED){ /* Ignore node */ }
 			else if(category!=CATEGORY_FROM_IP(node)){ /* Ignore node */ }
 			else{
+				select_display_line(0);
 				decode(cmask, 0);
 				print_buffer();
 				while(1){
