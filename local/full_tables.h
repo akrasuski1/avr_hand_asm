@@ -1,3 +1,5 @@
+#include "../src/common.h"
+
 const char* strings[]={
 	"[reserved]",
 	"adc",
@@ -6,6 +8,7 @@ const char* strings[]={
 	"and",
 	"andi",
 	"are" SHORT_SPACE_STR "you" SHORT_SPACE_STR "sure",
+	"arith",
 	"asr",
 	"bld",
 	"brcc",
@@ -28,6 +31,7 @@ const char* strings[]={
 	"bst",
 	"call",
 	"card",
+	"category",
 	"cbi",
 	"clc",
 	"clh",
@@ -63,6 +67,7 @@ const char* strings[]={
 	"in",
 	"inc",
 	"jmp",
+	"jump",
 	"lac" SHORT_SPACE_Z_COMMA_STR,
 	"las" SHORT_SPACE_Z_COMMA_STR,
 	"lat" SHORT_SPACE_Z_COMMA_STR,
@@ -77,6 +82,7 @@ const char* strings[]={
 	"m32",
 	"m8",
 	"main" SHORT_SPACE_STR "menu",
+	"misc",
 	"mov",
 	"move",
 	"movw",
@@ -135,5 +141,5 @@ const char* strings[]={
 	"xch" SHORT_SPACE_Z_COMMA_STR,
 	"yes",
 
-	NULL
+	0
 };

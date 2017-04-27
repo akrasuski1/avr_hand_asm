@@ -11,6 +11,7 @@ enum {
 	MENU_LOCATION,
 	MENU_MAIN_MENU,
 	MENU_DEVICE,
+	MENU_CATEGORY,
 };
 
 void print_buffer();

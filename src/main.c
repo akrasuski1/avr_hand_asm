@@ -24,7 +24,7 @@ uint16_t program[256];
 
 // More than op tree depth.
 #define STACK_SIZE 15
-void walk(uint16_t* ptr){
+void walk(uint16_t* ptr, uint8_t category){
 	// This function is basically dfs with possibility to move sideways between
 	// leaves, but rewritten into iterative form.
 	typedef struct stack_entry{
@@ -47,6 +47,7 @@ void walk(uint16_t* ptr){
 		if(IS_LEAF(node)){
 			uint8_t name=NAME_FROM_IP(node);
 			if(name==STRING_RESERVED){ /* Ignore node */ }
+			else if(category!=CATEGORY_FROM_IP(node)){ /* Ignore node */ }
 			else{
 				decode(cmask, 0);
 				print_buffer();
@@ -106,7 +107,8 @@ void walk(uint16_t* ptr){
 }
 
 void cheat_sheet(uint16_t* store_location){
-	walk(store_location);
+	uint8_t category=show_menu(MENU_CATEGORY);
+	walk(store_location, category);
 }
 
 void do_edit(){
